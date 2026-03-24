@@ -1,8 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function App() {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
+
+  // Load tasks from localStorage
+  useEffect(() => {
+    const savedTasks = JSON.parse(localStorage.getItem("tasks"));
+    if (savedTasks) {
+      setTasks(savedTasks);
+    }
+  }, []);
+
+  // Save tasks to localStorage
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
 
   const addTask = () => {
     if (task.trim() === "") return;
@@ -27,9 +40,13 @@ function App() {
     setTasks(updatedTasks);
   };
 
+  const clearAllTasks = () => {
+    setTasks([]);
+  };
+
   return (
     <div style={styles.container}>
-      <h1>My Dashboard</h1>
+      <h1>📊 My Dashboard</h1>
 
       <div style={styles.inputContainer}>
         <input
@@ -45,7 +62,9 @@ function App() {
         </button>
       </div>
 
-      <ul>
+      <h3>Total Tasks: {tasks.length}</h3>
+
+      <ul style={styles.list}>
         {tasks.map((t, index) => (
           <li key={index} style={styles.taskItem}>
             <span
@@ -67,6 +86,12 @@ function App() {
           </li>
         ))}
       </ul>
+
+      {tasks.length > 0 && (
+        <button onClick={clearAllTasks} style={styles.clearBtn}>
+          Clear All Tasks
+        </button>
+      )}
     </div>
   );
 }
@@ -77,32 +102,53 @@ const styles = {
     maxWidth: "400px",
     margin: "auto",
     textAlign: "center",
+    fontFamily: "Arial",
   },
   inputContainer: {
     display: "flex",
     gap: "10px",
+    marginBottom: "10px",
   },
   input: {
     flex: 1,
-    padding: "8px",
+    padding: "10px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
   },
   addBtn: {
-    padding: "8px",
+    padding: "10px",
     backgroundColor: "green",
     color: "white",
     border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  list: {
+    listStyle: "none",
+    padding: 0,
   },
   taskItem: {
     display: "flex",
     justifyContent: "space-between",
     marginTop: "10px",
-    padding: "5px",
-    borderBottom: "1px solid #ccc",
+    padding: "10px",
+    borderRadius: "5px",
+    backgroundColor: "#f5f5f5",
   },
   deleteBtn: {
     background: "red",
     color: "white",
     border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  clearBtn: {
+    marginTop: "15px",
+    padding: "10px",
+    backgroundColor: "black",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
     cursor: "pointer",
   },
 };
