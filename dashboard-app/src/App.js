@@ -6,6 +6,7 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem("tasks"));
@@ -18,7 +19,6 @@ function App() {
 
   const addTask = () => {
     if (task.trim() === "") return;
-
     setTasks([...tasks, { text: task, completed: false, category }]);
     setTask("");
   };
@@ -42,7 +42,6 @@ function App() {
     return "gray";
   };
 
-  // 🔥 FILTER + SEARCH LOGIC
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.text.toLowerCase().includes(search.toLowerCase());
 
@@ -59,10 +58,13 @@ function App() {
       : Math.round((completedTasks / tasks.length) * 100);
 
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, ...(darkMode ? styles.dark : styles.light) }}>
       <h1>📊 Productivity Dashboard</h1>
 
-      {/* INPUT */}
+      <button onClick={() => setDarkMode(!darkMode)} style={styles.toggleBtn}>
+        {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
+      </button>
+
       <div style={styles.inputContainer}>
         <input
           type="text"
@@ -87,7 +89,6 @@ function App() {
         </button>
       </div>
 
-      {/* SEARCH + FILTER */}
       <div style={styles.filterContainer}>
         <input
           type="text"
@@ -108,7 +109,6 @@ function App() {
         </select>
       </div>
 
-      {/* STATS */}
       <div style={styles.stats}>
         <p>Total: {tasks.length}</p>
         <p>Completed: {completedTasks}</p>
@@ -119,7 +119,6 @@ function App() {
         <div style={{ ...styles.progressFill, width: `${progress}%` }}></div>
       </div>
 
-      {/* TASK LIST */}
       <ul style={styles.list}>
         {filteredTasks.map((t, index) => (
           <li key={index} style={styles.taskItem}>
@@ -166,6 +165,19 @@ const styles = {
     maxWidth: "600px",
     margin: "auto",
     fontFamily: "Arial",
+    transition: "0.3s",
+  },
+  light: {
+    backgroundColor: "#ffffff",
+    color: "#000",
+  },
+  dark: {
+    backgroundColor: "#121212",
+    color: "#fff",
+  },
+  toggleBtn: {
+    marginBottom: "10px",
+    padding: "8px",
   },
   inputContainer: {
     display: "flex",
