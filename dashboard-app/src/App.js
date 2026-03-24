@@ -4,6 +4,8 @@ function App() {
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Work");
   const [tasks, setTasks] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
 
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem("tasks"));
@@ -17,13 +19,7 @@ function App() {
   const addTask = () => {
     if (task.trim() === "") return;
 
-    const newTask = {
-      text: task,
-      completed: false,
-      category: category,
-    };
-
-    setTasks([...tasks, newTask]);
+    setTasks([...tasks, { text: task, completed: false, category }]);
     setTask("");
   };
 
@@ -39,12 +35,6 @@ function App() {
 
   const clearAllTasks = () => setTasks([]);
 
-  const completedTasks = tasks.filter((t) => t.completed).length;
-  const progress =
-    tasks.length === 0
-      ? 0
-      : Math.round((completedTasks / tasks.length) * 100);
-
   const getCategoryColor = (cat) => {
     if (cat === "Work") return "#007bff";
     if (cat === "Study") return "green";
@@ -52,10 +42,27 @@ function App() {
     return "gray";
   };
 
+  // 🔥 FILTER + SEARCH LOGIC
+  const filteredTasks = tasks.filter((t) => {
+    const matchesSearch = t.text.toLowerCase().includes(search.toLowerCase());
+
+    if (filter === "Completed") return t.completed && matchesSearch;
+    if (filter === "Pending") return !t.completed && matchesSearch;
+
+    return matchesSearch;
+  });
+
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const progress =
+    tasks.length === 0
+      ? 0
+      : Math.round((completedTasks / tasks.length) * 100);
+
   return (
     <div style={styles.container}>
       <h1>📊 Productivity Dashboard</h1>
 
+      {/* INPUT */}
       <div style={styles.inputContainer}>
         <input
           type="text"
@@ -80,6 +87,28 @@ function App() {
         </button>
       </div>
 
+      {/* SEARCH + FILTER */}
+      <div style={styles.filterContainer}>
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={styles.input}
+        />
+
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={styles.select}
+        >
+          <option>All</option>
+          <option>Completed</option>
+          <option>Pending</option>
+        </select>
+      </div>
+
+      {/* STATS */}
       <div style={styles.stats}>
         <p>Total: {tasks.length}</p>
         <p>Completed: {completedTasks}</p>
@@ -90,8 +119,9 @@ function App() {
         <div style={{ ...styles.progressFill, width: `${progress}%` }}></div>
       </div>
 
+      {/* TASK LIST */}
       <ul style={styles.list}>
-        {tasks.map((t, index) => (
+        {filteredTasks.map((t, index) => (
           <li key={index} style={styles.taskItem}>
             <div>
               <span
@@ -140,7 +170,12 @@ const styles = {
   inputContainer: {
     display: "flex",
     gap: "10px",
-    marginBottom: "15px",
+    marginBottom: "10px",
+  },
+  filterContainer: {
+    display: "flex",
+    gap: "10px",
+    marginBottom: "10px",
   },
   input: {
     flex: 2,
