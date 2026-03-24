@@ -18,10 +18,12 @@ import {
 } from "firebase/auth";
 
 function App() {
+  // 🔐 Auth states
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // 📊 Dashboard states
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Work");
   const [tasks, setTasks] = useState([]);
@@ -30,7 +32,7 @@ function App() {
   const [filter, setFilter] = useState("All");
   const [darkMode, setDarkMode] = useState(false);
 
-  // 🔐 Auth Listener
+  // 🔐 Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -39,7 +41,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // 🔥 Fetch user-specific tasks
+  // 🔥 Real-time user-specific tasks
   useEffect(() => {
     if (!user) return;
 
@@ -61,20 +63,58 @@ function App() {
 
   // 🔐 SIGNUP
   const handleSignup = async () => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    if (!email || !password) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      alert("Enter a valid email (example@gmail.com)");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert("Signup successful ✅");
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   // 🔐 LOGIN
   const handleLogin = async () => {
-    await signInWithEmailAndPassword(auth, email, password);
+    if (!email || !password) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful ✅");
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   // 🔐 LOGOUT
   const handleLogout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
-  // ➕ Add Task (with userId)
+  // ➕ Add Task
   const addTask = async () => {
     if (task.trim() === "") return;
 
@@ -88,10 +128,12 @@ function App() {
     setTask("");
   };
 
+  // ❌ Delete Task
   const deleteTask = async (id) => {
     await deleteDoc(doc(db, "tasks", id));
   };
 
+  // ✅ Toggle Complete
   const toggleComplete = async (taskItem) => {
     const taskRef = doc(db, "tasks", taskItem.id);
 
@@ -100,6 +142,21 @@ function App() {
     });
   };
 
+  // 🎨 Category Colors
+  const getCategoryColor = (cat) => {
+    switch (cat) {
+      case "Work":
+        return "#007bff";
+      case "Study":
+        return "green";
+      case "Personal":
+        return "orange";
+      default:
+        return "gray";
+    }
+  };
+
+  // 🔍 Filter + Search
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.text
       .toLowerCase()
@@ -117,14 +174,15 @@ function App() {
       ? 0
       : Math.round((completedTasks / tasks.length) * 100);
 
-  // 🔥 AUTH UI
+  // 🔐 AUTH UI
   if (!user) {
     return (
       <div style={styles.authContainer}>
-        <h2>Login / Signup</h2>
+        <h2>🔐 Login / Signup</h2>
 
         <input
           placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
         />
@@ -132,15 +190,16 @@ function App() {
         <input
           type="password"
           placeholder="Password"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={styles.input}
         />
 
-        <button onClick={handleLogin} style={styles.addBtn}>
+        <button onClick={handleLogin} style={styles.btn}>
           Login
         </button>
 
-        <button onClick={handleSignup} style={styles.addBtn}>
+        <button onClick={handleSignup} style={styles.btn}>
           Signup
         </button>
       </div>
@@ -155,14 +214,17 @@ function App() {
         ...(darkMode ? styles.dark : styles.light),
       }}
     >
-      <h1>📊 Dashboard</h1>
+      <h1>📊 Productivity Dashboard</h1>
 
-      <button onClick={handleLogout}>Logout</button>
+      <button onClick={handleLogout} style={styles.btn}>
+        Logout
+      </button>
 
-      <button onClick={() => setDarkMode(!darkMode)}>
+      <button onClick={() => setDarkMode(!darkMode)} style={styles.btn}>
         Toggle Theme
       </button>
 
+      {/* INPUT */}
       <div style={styles.inputContainer}>
         <input
           value={task}
@@ -183,6 +245,7 @@ function App() {
         <button onClick={addTask}>Add</button>
       </div>
 
+      {/* SEARCH + FILTER */}
       <input
         placeholder="Search..."
         onChange={(e) => setSearch(e.target.value)}
@@ -194,14 +257,27 @@ function App() {
         <option>Pending</option>
       </select>
 
+      {/* STATS */}
       <p>Progress: {progress}%</p>
 
+      {/* TASK LIST */}
       <ul>
         {filteredTasks.map((t) => (
           <li key={t.id}>
-            <span onClick={() => toggleComplete(t)}>
+            <span
+              onClick={() => toggleComplete(t)}
+              style={{
+                textDecoration: t.completed ? "line-through" : "none",
+                cursor: "pointer",
+              }}
+            >
               {t.text}
             </span>
+
+            <span style={{ marginLeft: "10px", color: getCategoryColor(t.category) }}>
+              [{t.category}]
+            </span>
+
             <button onClick={() => deleteTask(t.id)}>❌</button>
           </li>
         ))}
@@ -211,7 +287,11 @@ function App() {
 }
 
 const styles = {
-  container: { padding: "20px" },
+  container: {
+    padding: "20px",
+    maxWidth: "600px",
+    margin: "auto",
+  },
   authContainer: {
     textAlign: "center",
     marginTop: "100px",
@@ -221,7 +301,7 @@ const styles = {
     margin: "10px auto",
     padding: "10px",
   },
-  addBtn: {
+  btn: {
     margin: "5px",
     padding: "10px",
   },
@@ -229,8 +309,14 @@ const styles = {
     display: "flex",
     gap: "10px",
   },
-  light: { backgroundColor: "#fff", color: "#000" },
-  dark: { backgroundColor: "#121212", color: "#fff" },
+  light: {
+    backgroundColor: "#fff",
+    color: "#000",
+  },
+  dark: {
+    backgroundColor: "#121212",
+    color: "#fff",
+  },
 };
 
 export default App;
