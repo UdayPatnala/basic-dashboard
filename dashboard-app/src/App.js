@@ -4,15 +4,11 @@ function App() {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
 
-  // Load tasks from localStorage
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem("tasks"));
-    if (savedTasks) {
-      setTasks(savedTasks);
-    }
+    if (savedTasks) setTasks(savedTasks);
   }, []);
 
-  // Save tasks to localStorage
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
@@ -20,33 +16,31 @@ function App() {
   const addTask = () => {
     if (task.trim() === "") return;
 
-    const newTask = {
-      text: task,
-      completed: false,
-    };
-
-    setTasks([...tasks, newTask]);
+    setTasks([...tasks, { text: task, completed: false }]);
     setTask("");
   };
 
   const deleteTask = (index) => {
-    const updatedTasks = tasks.filter((_, i) => i !== index);
-    setTasks(updatedTasks);
+    setTasks(tasks.filter((_, i) => i !== index));
   };
 
   const toggleComplete = (index) => {
-    const updatedTasks = [...tasks];
-    updatedTasks[index].completed = !updatedTasks[index].completed;
-    setTasks(updatedTasks);
+    const updated = [...tasks];
+    updated[index].completed = !updated[index].completed;
+    setTasks(updated);
   };
 
-  const clearAllTasks = () => {
-    setTasks([]);
-  };
+  const clearAllTasks = () => setTasks([]);
+
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const progress =
+    tasks.length === 0
+      ? 0
+      : Math.round((completedTasks / tasks.length) * 100);
 
   return (
     <div style={styles.container}>
-      <h1>📊 My Dashboard</h1>
+      <h1>📊 Productivity Dashboard</h1>
 
       <div style={styles.inputContainer}>
         <input
@@ -56,13 +50,22 @@ function App() {
           onChange={(e) => setTask(e.target.value)}
           style={styles.input}
         />
-
         <button onClick={addTask} style={styles.addBtn}>
           Add
         </button>
       </div>
 
-      <h3>Total Tasks: {tasks.length}</h3>
+      <div style={styles.stats}>
+        <p>Total: {tasks.length}</p>
+        <p>Completed: {completedTasks}</p>
+        <p>Progress: {progress}%</p>
+      </div>
+
+      <div style={styles.progressBar}>
+        <div style={{ ...styles.progressFill, width: `${progress}%` }}></div>
+      </div>
+
+      <h3>Tasks</h3>
 
       <ul style={styles.list}>
         {tasks.map((t, index) => (
@@ -72,15 +75,13 @@ function App() {
               style={{
                 textDecoration: t.completed ? "line-through" : "none",
                 cursor: "pointer",
+                color: t.completed ? "gray" : "black",
               }}
             >
               {t.text}
             </span>
 
-            <button
-              onClick={() => deleteTask(index)}
-              style={styles.deleteBtn}
-            >
+            <button onClick={() => deleteTask(index)} style={styles.deleteBtn}>
               ❌
             </button>
           </li>
@@ -89,7 +90,7 @@ function App() {
 
       {tasks.length > 0 && (
         <button onClick={clearAllTasks} style={styles.clearBtn}>
-          Clear All Tasks
+          Clear All
         </button>
       )}
     </div>
@@ -99,15 +100,15 @@ function App() {
 const styles = {
   container: {
     padding: "20px",
-    maxWidth: "400px",
+    maxWidth: "500px",
     margin: "auto",
-    textAlign: "center",
     fontFamily: "Arial",
+    textAlign: "center",
   },
   inputContainer: {
     display: "flex",
     gap: "10px",
-    marginBottom: "10px",
+    marginBottom: "15px",
   },
   input: {
     flex: 1,
@@ -117,11 +118,28 @@ const styles = {
   },
   addBtn: {
     padding: "10px",
-    backgroundColor: "green",
+    backgroundColor: "#007bff",
     color: "white",
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
+  },
+  stats: {
+    display: "flex",
+    justifyContent: "space-around",
+    marginBottom: "10px",
+  },
+  progressBar: {
+    width: "100%",
+    height: "10px",
+    backgroundColor: "#ddd",
+    borderRadius: "5px",
+    marginBottom: "15px",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "green",
+    borderRadius: "5px",
   },
   list: {
     listStyle: "none",
@@ -133,7 +151,7 @@ const styles = {
     marginTop: "10px",
     padding: "10px",
     borderRadius: "5px",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f4f4f4",
   },
   deleteBtn: {
     background: "red",
