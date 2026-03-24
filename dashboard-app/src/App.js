@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 function App() {
   const [task, setTask] = useState("");
+  const [category, setCategory] = useState("Work");
   const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
@@ -16,7 +17,13 @@ function App() {
   const addTask = () => {
     if (task.trim() === "") return;
 
-    setTasks([...tasks, { text: task, completed: false }]);
+    const newTask = {
+      text: task,
+      completed: false,
+      category: category,
+    };
+
+    setTasks([...tasks, newTask]);
     setTask("");
   };
 
@@ -38,6 +45,13 @@ function App() {
       ? 0
       : Math.round((completedTasks / tasks.length) * 100);
 
+  const getCategoryColor = (cat) => {
+    if (cat === "Work") return "#007bff";
+    if (cat === "Study") return "green";
+    if (cat === "Personal") return "orange";
+    return "gray";
+  };
+
   return (
     <div style={styles.container}>
       <h1>📊 Productivity Dashboard</h1>
@@ -50,6 +64,17 @@ function App() {
           onChange={(e) => setTask(e.target.value)}
           style={styles.input}
         />
+
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={styles.select}
+        >
+          <option>Work</option>
+          <option>Study</option>
+          <option>Personal</option>
+        </select>
+
         <button onClick={addTask} style={styles.addBtn}>
           Add
         </button>
@@ -65,21 +90,29 @@ function App() {
         <div style={{ ...styles.progressFill, width: `${progress}%` }}></div>
       </div>
 
-      <h3>Tasks</h3>
-
       <ul style={styles.list}>
         {tasks.map((t, index) => (
           <li key={index} style={styles.taskItem}>
-            <span
-              onClick={() => toggleComplete(index)}
-              style={{
-                textDecoration: t.completed ? "line-through" : "none",
-                cursor: "pointer",
-                color: t.completed ? "gray" : "black",
-              }}
-            >
-              {t.text}
-            </span>
+            <div>
+              <span
+                onClick={() => toggleComplete(index)}
+                style={{
+                  textDecoration: t.completed ? "line-through" : "none",
+                  cursor: "pointer",
+                }}
+              >
+                {t.text}
+              </span>
+
+              <span
+                style={{
+                  ...styles.categoryTag,
+                  backgroundColor: getCategoryColor(t.category),
+                }}
+              >
+                {t.category}
+              </span>
+            </div>
 
             <button onClick={() => deleteTask(index)} style={styles.deleteBtn}>
               ❌
@@ -100,10 +133,9 @@ function App() {
 const styles = {
   container: {
     padding: "20px",
-    maxWidth: "500px",
+    maxWidth: "600px",
     margin: "auto",
     fontFamily: "Arial",
-    textAlign: "center",
   },
   inputContainer: {
     display: "flex",
@@ -111,35 +143,31 @@ const styles = {
     marginBottom: "15px",
   },
   input: {
-    flex: 1,
+    flex: 2,
     padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
+  },
+  select: {
+    padding: "10px",
   },
   addBtn: {
     padding: "10px",
     backgroundColor: "#007bff",
     color: "white",
     border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
   },
   stats: {
     display: "flex",
     justifyContent: "space-around",
-    marginBottom: "10px",
   },
   progressBar: {
     width: "100%",
     height: "10px",
     backgroundColor: "#ddd",
-    borderRadius: "5px",
-    marginBottom: "15px",
+    margin: "10px 0",
   },
   progressFill: {
     height: "100%",
     backgroundColor: "green",
-    borderRadius: "5px",
   },
   list: {
     listStyle: "none",
@@ -148,17 +176,21 @@ const styles = {
   taskItem: {
     display: "flex",
     justifyContent: "space-between",
-    marginTop: "10px",
     padding: "10px",
+    backgroundColor: "#f5f5f5",
+    marginTop: "10px",
+  },
+  categoryTag: {
+    marginLeft: "10px",
+    padding: "3px 8px",
+    color: "white",
     borderRadius: "5px",
-    backgroundColor: "#f4f4f4",
+    fontSize: "12px",
   },
   deleteBtn: {
     background: "red",
     color: "white",
     border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
   },
   clearBtn: {
     marginTop: "15px",
@@ -166,8 +198,6 @@ const styles = {
     backgroundColor: "black",
     color: "white",
     border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
   },
 };
 
