@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 
 function App() {
   const [task, setTask] = useState("");
@@ -8,29 +17,57 @@ function App() {
   const [filter, setFilter] = useState("All");
   const [darkMode, setDarkMode] = useState(false);
 
+  // 🔥 Fetch tasks from Firebase
   useEffect(() => {
-    const savedTasks = JSON.parse(localStorage.getItem("tasks"));
-    if (savedTasks) setTasks(savedTasks);
+    const fetchTasks = async () => {
+      const querySnapshot = await getDocs(collection(db, "tasks"));
+      const loadedTasks = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTasks(loadedTasks);
+    };
+
+    fetchTasks();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-
-  const addTask = () => {
+  // ➕ Add task
+  const addTask = async () => {
     if (task.trim() === "") return;
-    setTasks([...tasks, { text: task, completed: false, category }]);
+
+    const newTask = {
+      text: task,
+      completed: false,
+      category,
+    };
+
+    const docRef = await addDoc(collection(db, "tasks"), newTask);
+
+    setTasks([...tasks, { id: docRef.id, ...newTask }]);
     setTask("");
   };
 
-  const deleteTask = (index) => {
-    setTasks(tasks.filter((_, i) => i !== index));
+  // ❌ Delete task
+  const deleteTask = async (id) => {
+    await deleteDoc(doc(db, "tasks", id));
+    setTasks(tasks.filter((t) => t.id !== id));
   };
 
-  const toggleComplete = (index) => {
-    const updated = [...tasks];
-    updated[index].completed = !updated[index].completed;
-    setTasks(updated);
+  // ✅ Toggle complete
+  const toggleComplete = async (taskItem) => {
+    const taskRef = doc(db, "tasks", taskItem.id);
+
+    await updateDoc(taskRef, {
+      completed: !taskItem.completed,
+    });
+
+    setTasks(
+      tasks.map((t) =>
+        t.id === taskItem.id
+          ? { ...t, completed: !t.completed }
+          : t
+      )
+    );
   };
 
   const clearAllTasks = () => setTasks([]);
@@ -42,6 +79,7 @@ function App() {
     return "gray";
   };
 
+  // 🔍 Filter + Search
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.text.toLowerCase().includes(search.toLowerCase());
 
@@ -58,13 +96,19 @@ function App() {
       : Math.round((completedTasks / tasks.length) * 100);
 
   return (
-    <div style={{ ...styles.container, ...(darkMode ? styles.dark : styles.light) }}>
+    <div
+      style={{
+        ...styles.container,
+        ...(darkMode ? styles.dark : styles.light),
+      }}
+    >
       <h1>📊 Productivity Dashboard</h1>
 
       <button onClick={() => setDarkMode(!darkMode)} style={styles.toggleBtn}>
         {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
       </button>
 
+      {/* INPUT */}
       <div style={styles.inputContainer}>
         <input
           type="text"
@@ -89,6 +133,7 @@ function App() {
         </button>
       </div>
 
+      {/* SEARCH + FILTER */}
       <div style={styles.filterContainer}>
         <input
           type="text"
@@ -109,6 +154,7 @@ function App() {
         </select>
       </div>
 
+      {/* STATS */}
       <div style={styles.stats}>
         <p>Total: {tasks.length}</p>
         <p>Completed: {completedTasks}</p>
@@ -119,12 +165,13 @@ function App() {
         <div style={{ ...styles.progressFill, width: `${progress}%` }}></div>
       </div>
 
+      {/* TASK LIST */}
       <ul style={styles.list}>
-        {filteredTasks.map((t, index) => (
-          <li key={index} style={styles.taskItem}>
+        {filteredTasks.map((t) => (
+          <li key={t.id} style={styles.taskItem}>
             <div>
               <span
-                onClick={() => toggleComplete(index)}
+                onClick={() => toggleComplete(t)}
                 style={{
                   textDecoration: t.completed ? "line-through" : "none",
                   cursor: "pointer",
@@ -143,7 +190,7 @@ function App() {
               </span>
             </div>
 
-            <button onClick={() => deleteTask(index)} style={styles.deleteBtn}>
+            <button onClick={() => deleteTask(t.id)} style={styles.deleteBtn}>
               ❌
             </button>
           </li>
