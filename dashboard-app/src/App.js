@@ -3,10 +3,10 @@ import { db } from "./firebase";
 import {
   collection,
   addDoc,
-  getDocs,
   deleteDoc,
   doc,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 function App() {
@@ -17,71 +17,68 @@ function App() {
   const [filter, setFilter] = useState("All");
   const [darkMode, setDarkMode] = useState(false);
 
-  // 🔥 Fetch tasks from Firebase
+  // 🔥 Real-time Firebase
   useEffect(() => {
-    const fetchTasks = async () => {
-      const querySnapshot = await getDocs(collection(db, "tasks"));
-      const loadedTasks = querySnapshot.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
+      const loadedTasks = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setTasks(loadedTasks);
-    };
 
-    fetchTasks();
+      setTasks(loadedTasks);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // ➕ Add task
   const addTask = async () => {
     if (task.trim() === "") return;
 
-    const newTask = {
+    await addDoc(collection(db, "tasks"), {
       text: task,
       completed: false,
       category,
-    };
+    });
 
-    const docRef = await addDoc(collection(db, "tasks"), newTask);
-
-    setTasks([...tasks, { id: docRef.id, ...newTask }]);
     setTask("");
   };
 
-  // ❌ Delete task
   const deleteTask = async (id) => {
     await deleteDoc(doc(db, "tasks", id));
-    setTasks(tasks.filter((t) => t.id !== id));
   };
 
-  // ✅ Toggle complete
   const toggleComplete = async (taskItem) => {
     const taskRef = doc(db, "tasks", taskItem.id);
 
     await updateDoc(taskRef, {
       completed: !taskItem.completed,
     });
-
-    setTasks(
-      tasks.map((t) =>
-        t.id === taskItem.id
-          ? { ...t, completed: !t.completed }
-          : t
-      )
-    );
   };
 
-  const clearAllTasks = () => setTasks([]);
+  const clearAllTasks = async () => {
+    const promises = tasks.map((t) =>
+      deleteDoc(doc(db, "tasks", t.id))
+    );
+    await Promise.all(promises);
+  };
 
   const getCategoryColor = (cat) => {
-    if (cat === "Work") return "#007bff";
-    if (cat === "Study") return "green";
-    if (cat === "Personal") return "orange";
-    return "gray";
+    switch (cat) {
+      case "Work":
+        return "#007bff";
+      case "Study":
+        return "green";
+      case "Personal":
+        return "orange";
+      default:
+        return "gray";
+    }
   };
 
-  // 🔍 Filter + Search
   const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.text.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = t.text
+      .toLowerCase()
+      .includes(search.toLowerCase());
 
     if (filter === "Completed") return t.completed && matchesSearch;
     if (filter === "Pending") return !t.completed && matchesSearch;
