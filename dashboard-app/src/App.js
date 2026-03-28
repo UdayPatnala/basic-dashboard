@@ -3,11 +3,12 @@ import { db, auth } from "./firebase";
 import {
   collection,
   addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
   onSnapshot,
   query,
   where,
-  doc,
-  updateDoc,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
@@ -17,237 +18,305 @@ import {
 } from "firebase/auth";
 
 function App() {
+  // 🔐 Auth states
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [plans, setPlans] = useState([]);
-  const [selectedDate, setSelectedDate] = useState("");
+  // 📊 Dashboard states
+  const [task, setTask] = useState("");
+  const [category, setCategory] = useState("Work");
+  const [tasks, setTasks] = useState([]);
 
-  // 🔐 AUTH
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [darkMode, setDarkMode] = useState(false);
+
+  // 🔐 Auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
     return () => unsubscribe();
   }, []);
 
-  // 🔥 FETCH DATA
+  // 🔥 Real-time user-specific tasks
   useEffect(() => {
     if (!user) return;
 
     const q = query(
-      collection(db, "plans"),
+      collection(db, "tasks"),
       where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
+      const loadedTasks = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setPlans(data);
+      setTasks(loadedTasks);
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  // 🚀 BULK UPLOAD FROM EXCEL DATA
-  const uploadFullPlan = async () => {
-    const plans = [
-      {
-        date: "2026-04-08",
-        day: "Wednesday",
-        tasks: {
-          core: "Python Basics + SQL Intro + Git basics",
-          project: "Dashboard basic UI",
-          dsa: "Arrays in Java",
-          github: "Create repo + first commit",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-09",
-        day: "Thursday",
-        tasks: {
-          core: "If-Else + SQL SELECT",
-          project: "Add input field",
-          dsa: "Array problems",
-          github: "Push code + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-10",
-        day: "Friday",
-        tasks: {
-          core: "Loops + SQL ORDER",
-          project: "Display tasks",
-          dsa: "String problems",
-          github: "Commit changes + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-11",
-        day: "Saturday",
-        tasks: {
-          core: "Functions + SQL Aggregates",
-          project: "Task add logic",
-          dsa: "2 Java problems",
-          github: "Push + Update README",
-          tools: "VS Code + Excel + PowerPoint",
-        },
-      },
-      {
-        date: "2026-04-12",
-        day: "Sunday",
-        tasks: {
-          core: "MS Office Practice",
-          project: "Docs formatting",
-          dsa: "Light practice",
-          github: "Optional commit",
-          tools: "MS Word/Excel/PPT",
-        },
-      },
-      {
-        date: "2026-04-13",
-        day: "Monday",
-        tasks: {
-          core: "Dict + SQL JOIN",
-          project: "Improve UI",
-          dsa: "Map/Set problems",
-          github: "Push + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-14",
-        day: "Tuesday",
-        tasks: {
-          core: "Revision",
-          project: "Fix bugs",
-          dsa: "Practice",
-          github: "Commit + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-15",
-        day: "Wednesday",
-        tasks: {
-          core: "Arrays + File Handling",
-          project: "Save tasks",
-          dsa: "Array practice",
-          github: "Push + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-16",
-        day: "Thursday",
-        tasks: {
-          core: "Strings + Subqueries",
-          project: "Improve UI",
-          dsa: "String problems",
-          github: "Commit + Update README",
-          tools: "VS Code",
-        },
-      },
-      {
-        date: "2026-04-17",
-        day: "Friday",
-        tasks: {
-          core: "Stack + OOP",
-          project: "Add stack logic",
-          dsa: "Stack implementation",
-          github: "Push + Update README",
-          tools: "VS Code",
-        },
-      }
-    ];
-
-    for (let plan of plans) {
-      await addDoc(collection(db, "plans"), {
-        userId: user.uid,
-        ...plan,
-        completed: false,
-      });
+  // 🔐 SIGNUP
+  const handleSignup = async () => {
+    if (!email || !password) {
+      alert("Please fill all fields");
+      return;
     }
 
-    alert("Plans uploaded successfully 🚀");
+    if (!email.includes("@") || !email.includes(".")) {
+      alert("Enter a valid email (example@gmail.com)");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert("Signup successful ✅");
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
-  // ✅ TOGGLE COMPLETE
-  const toggleComplete = async (id, current) => {
-    const ref = doc(db, "plans", id);
-    await updateDoc(ref, {
-      completed: !current,
+  // 🔐 LOGIN
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful ✅");
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // 🔐 LOGOUT
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // ➕ Add Task
+  const addTask = async () => {
+    if (task.trim() === "") return;
+
+    await addDoc(collection(db, "tasks"), {
+      text: task,
+      completed: false,
+      category,
+      userId: user.uid,
+    });
+
+    setTask("");
+  };
+
+  // ❌ Delete Task
+  const deleteTask = async (id) => {
+    await deleteDoc(doc(db, "tasks", id));
+  };
+
+  // ✅ Toggle Complete
+  const toggleComplete = async (taskItem) => {
+    const taskRef = doc(db, "tasks", taskItem.id);
+
+    await updateDoc(taskRef, {
+      completed: !taskItem.completed,
     });
   };
 
-  // 📅 FILTER
-  const filtered = selectedDate
-    ? plans.filter((p) => p.date === selectedDate)
-    : plans;
+  // 🎨 Category Colors
+  const getCategoryColor = (cat) => {
+    switch (cat) {
+      case "Work":
+        return "#007bff";
+      case "Study":
+        return "green";
+      case "Personal":
+        return "orange";
+      default:
+        return "gray";
+    }
+  };
+
+  // 🔍 Filter + Search
+  const filteredTasks = tasks.filter((t) => {
+    const matchesSearch = t.text
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    if (filter === "Completed") return t.completed && matchesSearch;
+    if (filter === "Pending") return !t.completed && matchesSearch;
+
+    return matchesSearch;
+  });
+
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const progress =
+    tasks.length === 0
+      ? 0
+      : Math.round((completedTasks / tasks.length) * 100);
 
   // 🔐 AUTH UI
   if (!user) {
     return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h2>Login / Signup</h2>
+      <div style={styles.authContainer}>
+        <h2>🔐 Login / Signup</h2>
 
-        <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
 
-        <br />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
 
-        <button onClick={() => signInWithEmailAndPassword(auth, email, password)}>Login</button>
-        <button onClick={() => createUserWithEmailAndPassword(auth, email, password)}>Signup</button>
+        <button onClick={handleLogin} style={styles.btn}>
+          Login
+        </button>
+
+        <button onClick={handleSignup} style={styles.btn}>
+          Signup
+        </button>
       </div>
     );
   }
 
-  // 🎯 UI
+  // 🔥 DASHBOARD UI
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>📅 Learning Dashboard</h1>
+    <div
+      style={{
+        ...styles.container,
+        ...(darkMode ? styles.dark : styles.light),
+      }}
+    >
+      <h1>📊 Productivity Dashboard</h1>
 
-      <button onClick={() => signOut(auth)}>Logout</button>
+      <button onClick={handleLogout} style={styles.btn}>
+        Logout
+      </button>
 
-      <br /><br />
+      <button onClick={() => setDarkMode(!darkMode)} style={styles.btn}>
+        Toggle Theme
+      </button>
 
-      <button onClick={uploadFullPlan}>Upload Full Plan</button>
+      {/* INPUT */}
+      <div style={styles.inputContainer}>
+        <input
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          placeholder="Enter task"
+          style={styles.input}
+        />
 
-      <br /><br />
-
-      <input type="date" onChange={(e) => setSelectedDate(e.target.value)} />
-
-      <h3>Plans</h3>
-
-      {filtered.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            border: "1px solid gray",
-            padding: "10px",
-            margin: "10px 0",
-            backgroundColor: p.completed ? "#d4edda" : "#f8f9fa",
-          }}
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
         >
-          <h3>{p.day} ({p.date})</h3>
+          <option>Work</option>
+          <option>Study</option>
+          <option>Personal</option>
+        </select>
 
-          <p><b>Core:</b> {p.tasks.core}</p>
-          <p><b>Project:</b> {p.tasks.project}</p>
-          <p><b>DSA:</b> {p.tasks.dsa}</p>
-          <p><b>GitHub:</b> {p.tasks.github}</p>
-          <p><b>Tools:</b> {p.tasks.tools}</p>
+        <button onClick={addTask}>Add</button>
+      </div>
 
-          <button onClick={() => toggleComplete(p.id, p.completed)}>
-            {p.completed ? "Undo" : "Mark Done"}
-          </button>
-        </div>
-      ))}
+      {/* SEARCH + FILTER */}
+      <input
+        placeholder="Search..."
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <select onChange={(e) => setFilter(e.target.value)}>
+        <option>All</option>
+        <option>Completed</option>
+        <option>Pending</option>
+      </select>
+
+      {/* STATS */}
+      <p>Progress: {progress}%</p>
+
+      {/* TASK LIST */}
+      <ul>
+        {filteredTasks.map((t) => (
+          <li key={t.id}>
+            <span
+              onClick={() => toggleComplete(t)}
+              style={{
+                textDecoration: t.completed ? "line-through" : "none",
+                cursor: "pointer",
+              }}
+            >
+              {t.text}
+            </span>
+
+            <span style={{ marginLeft: "10px", color: getCategoryColor(t.category) }}>
+              [{t.category}]
+            </span>
+
+            <button onClick={() => deleteTask(t.id)}>❌</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    padding: "20px",
+    maxWidth: "600px",
+    margin: "auto",
+  },
+  authContainer: {
+    textAlign: "center",
+    marginTop: "100px",
+  },
+  input: {
+    display: "block",
+    margin: "10px auto",
+    padding: "10px",
+  },
+  btn: {
+    margin: "5px",
+    padding: "10px",
+  },
+  inputContainer: {
+    display: "flex",
+    gap: "10px",
+  },
+  light: {
+    backgroundColor: "#fff",
+    color: "#000",
+  },
+  dark: {
+    backgroundColor: "#121212",
+    color: "#fff",
+  },
+};
 
 export default App;
