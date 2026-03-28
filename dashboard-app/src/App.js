@@ -3,9 +3,6 @@ import { db, auth } from "./firebase";
 import {
   collection,
   addDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
   onSnapshot,
   query,
   where,
@@ -18,305 +15,121 @@ import {
 } from "firebase/auth";
 
 function App() {
-  // 🔐 Auth states
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // 📊 Dashboard states
-  const [task, setTask] = useState("");
-  const [category, setCategory] = useState("Work");
-  const [tasks, setTasks] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [darkMode, setDarkMode] = useState(false);
-
-  // 🔐 Auth listener
+  // AUTH
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
 
-  // 🔥 Real-time user-specific tasks
+  // FETCH DATA
   useEffect(() => {
     if (!user) return;
 
     const q = query(
-      collection(db, "tasks"),
+      collection(db, "plans"),
       where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loadedTasks = snapshot.docs.map((doc) => ({
+      const data = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setTasks(loadedTasks);
+      setPlans(data);
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  // 🔐 SIGNUP
-  const handleSignup = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      alert("Enter a valid email (example@gmail.com)");
-      return;
-    }
-
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
-      return;
-    }
-
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      alert("Signup successful ✅");
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // 🔐 LOGIN
-  const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login successful ✅");
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // 🔐 LOGOUT
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // ➕ Add Task
-  const addTask = async () => {
-    if (task.trim() === "") return;
-
-    await addDoc(collection(db, "tasks"), {
-      text: task,
-      completed: false,
-      category,
+  // ADD PLAN (MANUAL ENTRY)
+  const addSamplePlan = async () => {
+    await addDoc(collection(db, "plans"), {
       userId: user.uid,
-    });
-
-    setTask("");
-  };
-
-  // ❌ Delete Task
-  const deleteTask = async (id) => {
-    await deleteDoc(doc(db, "tasks", id));
-  };
-
-  // ✅ Toggle Complete
-  const toggleComplete = async (taskItem) => {
-    const taskRef = doc(db, "tasks", taskItem.id);
-
-    await updateDoc(taskRef, {
-      completed: !taskItem.completed,
+      date: "2026-04-09",
+      day: "Wednesday",
+      core: "Python Basics + SQL Intro",
+      project: "Dashboard UI",
+      dsa: "Arrays",
+      github: "Create repo + commit",
+      tools: "VS Code",
+      completed: false,
     });
   };
 
-  // 🎨 Category Colors
-  const getCategoryColor = (cat) => {
-    switch (cat) {
-      case "Work":
-        return "#007bff";
-      case "Study":
-        return "green";
-      case "Personal":
-        return "orange";
-      default:
-        return "gray";
-    }
+  const toggleComplete = async (id, current) => {
+    const ref = collection(db, "plans");
+    await addDoc(ref, {
+      completed: !current,
+    });
   };
 
-  // 🔍 Filter + Search
-  const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.text
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  const filtered = selectedDate
+    ? plans.filter((p) => p.date === selectedDate)
+    : plans;
 
-    if (filter === "Completed") return t.completed && matchesSearch;
-    if (filter === "Pending") return !t.completed && matchesSearch;
-
-    return matchesSearch;
-  });
-
-  const completedTasks = tasks.filter((t) => t.completed).length;
-  const progress =
-    tasks.length === 0
-      ? 0
-      : Math.round((completedTasks / tasks.length) * 100);
-
-  // 🔐 AUTH UI
+  // AUTH UI
   if (!user) {
     return (
-      <div style={styles.authContainer}>
-        <h2>🔐 Login / Signup</h2>
-
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
-
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h2>Login / Signup</h2>
+        <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
         <input
           type="password"
           placeholder="Password"
-          value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
         />
-
-        <button onClick={handleLogin} style={styles.btn}>
-          Login
-        </button>
-
-        <button onClick={handleSignup} style={styles.btn}>
-          Signup
-        </button>
+        <br />
+        <button onClick={() => signInWithEmailAndPassword(auth, email, password)}>Login</button>
+        <button onClick={() => createUserWithEmailAndPassword(auth, email, password)}>Signup</button>
       </div>
     );
   }
 
-  // 🔥 DASHBOARD UI
   return (
-    <div
-      style={{
-        ...styles.container,
-        ...(darkMode ? styles.dark : styles.light),
-      }}
-    >
-      <h1>📊 Productivity Dashboard</h1>
+    <div style={{ padding: "20px" }}>
+      <h1>📅 Learning Dashboard</h1>
 
-      <button onClick={handleLogout} style={styles.btn}>
-        Logout
-      </button>
+      <button onClick={() => signOut(auth)}>Logout</button>
 
-      <button onClick={() => setDarkMode(!darkMode)} style={styles.btn}>
-        Toggle Theme
-      </button>
+      <br /><br />
 
-      {/* INPUT */}
-      <div style={styles.inputContainer}>
-        <input
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
-          placeholder="Enter task"
-          style={styles.input}
-        />
+      <button onClick={addSamplePlan}>Add Sample Plan</button>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option>Work</option>
-          <option>Study</option>
-          <option>Personal</option>
-        </select>
+      <br /><br />
 
-        <button onClick={addTask}>Add</button>
-      </div>
-
-      {/* SEARCH + FILTER */}
       <input
-        placeholder="Search..."
-        onChange={(e) => setSearch(e.target.value)}
+        type="date"
+        onChange={(e) => setSelectedDate(e.target.value)}
       />
 
-      <select onChange={(e) => setFilter(e.target.value)}>
-        <option>All</option>
-        <option>Completed</option>
-        <option>Pending</option>
-      </select>
+      <h3>Plans</h3>
 
-      {/* STATS */}
-      <p>Progress: {progress}%</p>
-
-      {/* TASK LIST */}
-      <ul>
-        {filteredTasks.map((t) => (
-          <li key={t.id}>
-            <span
-              onClick={() => toggleComplete(t)}
-              style={{
-                textDecoration: t.completed ? "line-through" : "none",
-                cursor: "pointer",
-              }}
-            >
-              {t.text}
-            </span>
-
-            <span style={{ marginLeft: "10px", color: getCategoryColor(t.category) }}>
-              [{t.category}]
-            </span>
-
-            <button onClick={() => deleteTask(t.id)}>❌</button>
-          </li>
-        ))}
-      </ul>
+      {filtered.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            border: "1px solid gray",
+            padding: "10px",
+            margin: "10px 0",
+          }}
+        >
+          <h3>{p.day} ({p.date})</h3>
+          <p><b>Core:</b> {p.core}</p>
+          <p><b>Project:</b> {p.project}</p>
+          <p><b>DSA:</b> {p.dsa}</p>
+          <p><b>GitHub:</b> {p.github}</p>
+          <p><b>Tools:</b> {p.tools}</p>
+        </div>
+      ))}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: "20px",
-    maxWidth: "600px",
-    margin: "auto",
-  },
-  authContainer: {
-    textAlign: "center",
-    marginTop: "100px",
-  },
-  input: {
-    display: "block",
-    margin: "10px auto",
-    padding: "10px",
-  },
-  btn: {
-    margin: "5px",
-    padding: "10px",
-  },
-  inputContainer: {
-    display: "flex",
-    gap: "10px",
-  },
-  light: {
-    backgroundColor: "#fff",
-    color: "#000",
-  },
-  dark: {
-    backgroundColor: "#121212",
-    color: "#fff",
-  },
-};
 
 export default App;
