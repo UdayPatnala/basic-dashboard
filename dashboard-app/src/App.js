@@ -6,6 +6,8 @@ import {
   onSnapshot,
   query,
   where,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
@@ -22,13 +24,13 @@ function App() {
   const [plans, setPlans] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
 
-  // AUTH
+  // 🔐 AUTH
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
 
-  // FETCH DATA
+  // 🔥 FETCH USER PLANS (REAL-TIME)
   useEffect(() => {
     if (!user) return;
 
@@ -48,50 +50,76 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  // ADD PLAN (MANUAL ENTRY)
+  // ➕ ADD SAMPLE PLAN
   const addSamplePlan = async () => {
     await addDoc(collection(db, "plans"), {
       userId: user.uid,
       date: "2026-04-09",
       day: "Wednesday",
-      core: "Python Basics + SQL Intro",
-      project: "Dashboard UI",
-      dsa: "Arrays",
-      github: "Create repo + commit",
-      tools: "VS Code",
+      tasks: {
+        core: "Python Basics + SQL Intro",
+        project: "Dashboard UI",
+        dsa: "Arrays",
+        github: "Create repo + commit",
+        tools: "VS Code",
+      },
       completed: false,
     });
   };
 
+  // ✅ FIXED TOGGLE COMPLETE
   const toggleComplete = async (id, current) => {
-    const ref = collection(db, "plans");
-    await addDoc(ref, {
+    const ref = doc(db, "plans", id);
+
+    await updateDoc(ref, {
       completed: !current,
     });
   };
 
+  // 📅 FILTER BY DATE
   const filtered = selectedDate
     ? plans.filter((p) => p.date === selectedDate)
     : plans;
 
-  // AUTH UI
+  // 🔐 AUTH UI
   if (!user) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
         <h2>Login / Signup</h2>
-        <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+
+        <input
+          placeholder="Email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
         <input
           type="password"
           placeholder="Password"
           onChange={(e) => setPassword(e.target.value)}
         />
+
         <br />
-        <button onClick={() => signInWithEmailAndPassword(auth, email, password)}>Login</button>
-        <button onClick={() => createUserWithEmailAndPassword(auth, email, password)}>Signup</button>
+
+        <button
+          onClick={() =>
+            signInWithEmailAndPassword(auth, email, password)
+          }
+        >
+          Login
+        </button>
+
+        <button
+          onClick={() =>
+            createUserWithEmailAndPassword(auth, email, password)
+          }
+        >
+          Signup
+        </button>
       </div>
     );
   }
 
+  // 🎯 MAIN UI
   return (
     <div style={{ padding: "20px" }}>
       <h1>📅 Learning Dashboard</h1>
@@ -118,14 +146,23 @@ function App() {
             border: "1px solid gray",
             padding: "10px",
             margin: "10px 0",
+            borderRadius: "5px",
+            backgroundColor: p.completed ? "#d4edda" : "#f8f9fa",
           }}
         >
-          <h3>{p.day} ({p.date})</h3>
-          <p><b>Core:</b> {p.core}</p>
-          <p><b>Project:</b> {p.project}</p>
-          <p><b>DSA:</b> {p.dsa}</p>
-          <p><b>GitHub:</b> {p.github}</p>
-          <p><b>Tools:</b> {p.tools}</p>
+          <h3>
+            {p.day} ({p.date})
+          </h3>
+
+          <p><b>Core:</b> {p.tasks.core}</p>
+          <p><b>Project:</b> {p.tasks.project}</p>
+          <p><b>DSA:</b> {p.tasks.dsa}</p>
+          <p><b>GitHub:</b> {p.tasks.github}</p>
+          <p><b>Tools:</b> {p.tasks.tools}</p>
+
+          <button onClick={() => toggleComplete(p.id, p.completed)}>
+            {p.completed ? "Undo" : "Mark Done"}
+          </button>
         </div>
       ))}
     </div>
