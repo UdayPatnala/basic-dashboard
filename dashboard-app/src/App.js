@@ -33,7 +33,7 @@ function App() {
     backgrounds[Math.floor(Math.random() * backgrounds.length)]
   );
 
-  // 🔥 Load JSON Tasks
+  // Load JSON
   useEffect(() => {
     const formatted = tasksData.map((t, i) => ({
       id: Date.now() + i,
@@ -43,11 +43,10 @@ function App() {
       notes: "",
       completed: false
     }));
-
     setTasks(formatted);
   }, []);
 
-  // 🔐 ACCESS SCREEN
+  // Access screen
   if (!access) {
     return (
       <div style={{
@@ -75,26 +74,23 @@ function App() {
     );
   }
 
-  // ➕ Add Task
+  // Add Task
   const addTask = () => {
     if (!task) return;
 
-    setTasks([
-      ...tasks,
-      {
-        id: Date.now(),
-        text: task,
-        category,
-        date,
-        notes,
-        completed: false
-      }
-    ]);
+    setTasks([...tasks, {
+      id: Date.now(),
+      text: task,
+      category,
+      date,
+      notes,
+      completed: false
+    }]);
 
-    setTask(""); setNotes(""); setDate("");
+    setTask(""); setDate(""); setNotes("");
   };
 
-  // ✏️ Edit
+  // Edit
   const startEdit = (t) => {
     setTask(t.text);
     setCategory(t.category);
@@ -118,17 +114,13 @@ function App() {
     ));
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(t => t.id !== id));
-  };
-
-  // 🔥 UPDATED FILTER LOGIC (includes upcoming tasks)
+  // 🔥 FINAL FILTER LOGIC
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (t.date === selectedDate) return match;
+
     if (t.date < selectedDate && !t.completed) return match;
-    if (t.date > selectedDate) return match;
 
     return false;
   });
@@ -149,10 +141,7 @@ function App() {
 
         {/* Top Bar */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <input
-            placeholder="Search..."
-            onChange={(e)=>setSearch(e.target.value)}
-          />
+          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
 
           <input
             type="date"
@@ -199,7 +188,6 @@ function App() {
             )}
 
             <button onClick={(e)=>{e.stopPropagation(); startEdit(t)}}>✏️</button>
-            <button onClick={(e)=>{e.stopPropagation(); deleteTask(t.id)}}>❌</button>
             <button onClick={(e)=>{e.stopPropagation(); toggleComplete(t.id)}}>✔️</button>
           </div>
         ))}
