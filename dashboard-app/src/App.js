@@ -10,10 +10,8 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-CA") // ✅ FIX
+    new Date().toLocaleDateString("en-CA")
   );
-
-  const [expandedId, setExpandedId] = useState(null);
 
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Java");
@@ -21,20 +19,7 @@ function App() {
   const [notes, setNotes] = useState("");
 
   const [editId, setEditId] = useState(null);
-
-  // ✅ DATE FORMAT WITHOUT TIMEZONE ISSUE
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-
-    if (dateStr.includes("-")) return dateStr; // already correct
-
-    const d = new Date(dateStr);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
+  const [expandedId, setExpandedId] = useState(null);
 
   const backgrounds = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
@@ -47,51 +32,59 @@ function App() {
     backgrounds[Math.floor(Math.random() * backgrounds.length)]
   );
 
-  useEffect(() => {
-    if ("Notification" in window) Notification.requestPermission();
-  }, []);
-
-  // LOAD
+  // 🔥 LOAD DATA (SAFE)
   useEffect(() => {
     const saved = localStorage.getItem("tasks");
 
     if (saved) {
-      setTasks(JSON.parse(saved));
-    } else {
-      const formatted = tasksData.map((t, i) => ({
-        id: Date.now() + i,
-        text: t.Task,
-        category: t.Category,
-        date: t.Date, // ✅ NO CONVERSION
-        notes: "",
-        completed: false
-      }));
+      const parsed = JSON.parse(saved);
 
-      setTasks(formatted);
+      if (parsed && parsed.length > 0) {
+        setTasks(parsed);
+      } else {
+        loadJSON();
+      }
+    } else {
+      loadJSON();
     }
   }, []);
+
+  const loadJSON = () => {
+    const formatted = tasksData.map((t, i) => ({
+      id: Date.now() + i,
+      text: t.Task,
+      category: t.Category,
+      date: t.Date, // already correct format
+      notes: "",
+      completed: false
+    }));
+
+    setTasks(formatted);
+  };
 
   // SAVE
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  const notify = (msg) => {
-    if (Notification.permission === "granted") {
-      new Notification(msg);
-    }
-  };
-
+  // ACCESS SCREEN
   if (!access) {
     return (
       <div style={styles.center(bg)}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
-          <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
-          <button onClick={()=>{
-            if(enteredCode === ACCESS_CODE) setAccess(true);
-            else alert("Wrong Code");
-          }}>Enter</button>
+          <input
+            value={enteredCode}
+            onChange={(e) => setEnteredCode(e.target.value)}
+          />
+          <button
+            onClick={() => {
+              if (enteredCode === ACCESS_CODE) setAccess(true);
+              else alert("Wrong Code");
+            }}
+          >
+            Enter
+          </button>
         </div>
       </div>
     );
@@ -99,22 +92,28 @@ function App() {
 
   const finalCategory = category === "Other" ? customCategory : category;
 
+  // ADD TASK
   const addTask = () => {
     if (!task) return;
 
-    setTasks([...tasks, {
-      id: Date.now(),
-      text: task,
-      category: finalCategory,
-      date: selectedDate, // ✅ SAME FORMAT
-      notes,
-      completed: false
-    }]);
+    setTasks([
+      ...tasks,
+      {
+        id: Date.now(),
+        text: task,
+        category: finalCategory,
+        date: selectedDate,
+        notes,
+        completed: false
+      }
+    ]);
 
-    notify("Task Added");
-    setTask(""); setNotes(""); setCustomCategory("");
+    setTask("");
+    setNotes("");
+    setCustomCategory("");
   };
 
+  // EDIT
   const startEdit = (t) => {
     setTask(t.text);
     setCategory(t.category);
@@ -123,25 +122,36 @@ function App() {
   };
 
   const updateTask = () => {
-    setTasks(tasks.map(t =>
-      t.id === editId
-        ? { ...t, text: task, category: finalCategory, notes, date: selectedDate }
-        : t
-    ));
+    setTasks(
+      tasks.map((t) =>
+        t.id === editId
+          ? {
+              ...t,
+              text: task,
+              category: finalCategory,
+              notes,
+              date: selectedDate
+            }
+          : t
+      )
+    );
 
     setEditId(null);
-    setTask(""); setNotes("");
+    setTask("");
+    setNotes("");
   };
 
+  // COMPLETE
   const toggleComplete = (id) => {
-    setTasks(tasks.map(t =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    ));
-    notify("Task Updated");
+    setTasks(
+      tasks.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      )
+    );
   };
 
-  // ✅ FINAL FILTER (NO DATE BUG)
-  const filteredTasks = tasks.filter(t => {
+  // FILTER
+  const filteredTasks = tasks.filter((t) => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (search.trim() !== "") return match;
@@ -152,13 +162,14 @@ function App() {
     return false;
   });
 
-  // PROGRESS
+  // GLOBAL PROGRESS
   const total = tasks.length;
-  const completed = tasks.filter(t => t.completed).length;
+  const completed = tasks.filter((t) => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
-  const dayTasks = tasks.filter(t => t.date === selectedDate);
-  const dayCompleted = dayTasks.filter(t => t.completed).length;
+  // DAILY PROGRESS
+  const dayTasks = tasks.filter((t) => t.date === selectedDate);
+  const dayCompleted = dayTasks.filter((t) => t.completed).length;
   const dayPercent = dayTasks.length
     ? Math.round((dayCompleted / dayTasks.length) * 100)
     : 0;
@@ -166,21 +177,28 @@ function App() {
   return (
     <div style={styles.page(bg)}>
       <div style={styles.container}>
-
-        {/* Global Progress */}
-        <div>{completed}/{total} Completed</div>
-        <div style={styles.progressBar}>
-          <div style={{ ...styles.progressFill, width: `${percent}%` }} />
+        {/* GLOBAL PROGRESS */}
+        <div>
+          {completed}/{total} Completed
         </div>
 
-        {/* Top */}
+        <div style={styles.progressBar}>
+          <div
+            style={{ ...styles.progressFill, width: `${percent}%` }}
+          />
+        </div>
+
+        {/* TOP */}
         <div style={styles.top}>
-          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+          <input
+            placeholder="Search..."
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
           <input
             type="date"
             value={selectedDate}
-            onChange={(e)=>setSelectedDate(e.target.value)}
+            onChange={(e) => setSelectedDate(e.target.value)}
           />
 
           <div style={styles.ring(dayPercent)}>
@@ -188,10 +206,17 @@ function App() {
           </div>
         </div>
 
-        {/* Inputs */}
-        <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
+        {/* INPUTS */}
+        <input
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          placeholder="Task"
+        />
 
-        <select value={category} onChange={(e)=>setCategory(e.target.value)}>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
           <option>Java</option>
           <option>DSA</option>
           <option>Web</option>
@@ -202,30 +227,58 @@ function App() {
 
         {category === "Other" && (
           <input
-            placeholder="Enter category"
+            placeholder="Custom category"
             value={customCategory}
-            onChange={(e)=>setCustomCategory(e.target.value)}
+            onChange={(e) => setCustomCategory(e.target.value)}
           />
         )}
 
-        <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Notes"
+        />
 
         <button onClick={editId ? updateTask : addTask}>
           {editId ? "Update" : "Add"}
         </button>
 
-        {/* Tasks */}
-        {filteredTasks.map(t => (
-          <div key={t.id} style={styles.task}
-            onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
+        {/* TASK LIST */}
+        {filteredTasks.map((t) => (
+          <div
+            key={t.id}
+            style={styles.task}
+            onClick={() =>
+              setExpandedId(expandedId === t.id ? null : t.id)
+            }
           >
-            <div>{t.completed ? "✔️" : "⭕"} {t.text}</div>
-            <div>{t.category} | {t.date}</div>
+            <div>
+              {t.completed ? "✔️" : "⭕"} {t.text}
+            </div>
+
+            <div>
+              {t.category} | {t.date}
+            </div>
 
             {expandedId === t.id && <div>{t.notes}</div>}
 
-            <button onClick={(e)=>{e.stopPropagation(); startEdit(t)}}>✏️</button>
-            <button onClick={(e)=>{e.stopPropagation(); toggleComplete(t.id)}}>✔️</button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startEdit(t);
+              }}
+            >
+              ✏️
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleComplete(t.id);
+              }}
+            >
+              ✔️
+            </button>
           </div>
         ))}
       </div>
@@ -234,16 +287,79 @@ function App() {
 }
 
 const styles = {
-  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
-  container: { background: "rgba(255,255,255,0.3)", backdropFilter: "blur(10px)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
-  progressBar: { height: "10px", background: "#ccc" },
-  progressFill: { height: "10px", background: "green" },
-  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
-  task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
-  ring: (p) => ({ width: "80px", height: "80px", borderRadius: "50%", background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`, display: "flex", alignItems: "center", justifyContent: "center" }),
-  innerRing: { width: "50px", height: "50px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
-  center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
-  card: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "10px" }
+  page: (bg) => ({
+    minHeight: "100vh",
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover",
+    padding: "20px"
+  }),
+
+  container: {
+    background: "rgba(255,255,255,0.3)",
+    padding: "20px",
+    borderRadius: "12px",
+    maxWidth: "800px",
+    margin: "auto"
+  },
+
+  progressBar: {
+    height: "10px",
+    background: "#ccc"
+  },
+
+  progressFill: {
+    height: "10px",
+    background: "green"
+  },
+
+  top: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "10px"
+  },
+
+  task: {
+    background: "#fff",
+    padding: "10px",
+    margin: "10px 0",
+    borderRadius: "10px"
+  },
+
+  ring: (p) => ({
+    width: "80px",
+    height: "80px",
+    borderRadius: "50%",
+    background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }),
+
+  innerRing: {
+    width: "50px",
+    height: "50px",
+    background: "#fff",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  center: (bg) => ({
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover"
+  }),
+
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "10px"
+  }
 };
 
 export default App;
