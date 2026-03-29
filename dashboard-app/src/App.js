@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import tasksData from "./data/tasks.json";
 
 function App() {
-  const ACCESS_CODE = "5258745636951";
+  const ACCESS_CODE = "1234";
 
   const [enteredCode, setEnteredCode] = useState("");
   const [access, setAccess] = useState(false);
