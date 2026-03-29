@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { db, auth } from "./firebase";
 import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
-  onSnapshot,
-  query,
-  where,
+  collection, addDoc, deleteDoc, doc, updateDoc,
+  onSnapshot, query, where
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
+  onAuthStateChanged
 } from "firebase/auth";
 
 function App() {
@@ -32,14 +26,20 @@ function App() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
-  // 🔥 Random Background Images
+  const [bgImage, setBgImage] = useState("");
+
+  // Background images
   const backgrounds = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
     "https://images.unsplash.com/photo-1519125323398-675f0ddb6308",
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
   ];
-  const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
+  useEffect(() => {
+    const random = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+    setBgImage(random);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -49,10 +49,7 @@ function App() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, "tasks"),
-      where("userId", "==", user.uid)
-    );
+    const q = query(collection(db, "tasks"), where("userId", "==", user.uid));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map((doc) => ({
@@ -109,19 +106,6 @@ function App() {
     return `${day}-${month}-${year}`;
   };
 
-  const circleStyle = {
-    width: "120px",
-    height: "120px",
-    borderRadius: "50%",
-    background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #e0e0e0 0deg)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "20px auto",
-    fontWeight: "bold",
-    fontSize: "18px",
-  };
-
   const inputStyle = {
     padding: "10px",
     margin: "5px",
@@ -168,7 +152,7 @@ function App() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundImage: `url(${randomBg})`,
+      backgroundImage: `url(${bgImage})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       padding: "20px"
@@ -178,14 +162,40 @@ function App() {
         padding: "20px",
         borderRadius: "10px",
         maxWidth: "700px",
-        margin: "auto"
+        margin: "auto",
+        position: "relative"
       }}>
 
         <h1 style={{ textAlign: "center" }}>📊 Productivity Dashboard</h1>
 
-        <button style={buttonStyle} onClick={() => signOut(auth)}>Logout</button>
+        {/* 🔵 Progress Ring (Right Side) */}
+        <div style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          width: "100px",
+          height: "100px",
+          borderRadius: "50%",
+          background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #e0e0e0 0deg)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <div style={{
+            width: "70px",
+            height: "70px",
+            borderRadius: "50%",
+            background: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: "bold"
+          }}>
+            {progress}%
+          </div>
+        </div>
 
-        <div style={circleStyle}>{progress}%</div>
+        <button style={buttonStyle} onClick={() => signOut(auth)}>Logout</button>
 
         <input style={inputStyle} value={task} onChange={(e) => setTask(e.target.value)} placeholder="Enter task" />
 
@@ -195,7 +205,12 @@ function App() {
           <option>Personal</option>
         </select>
 
-        <input style={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input
+          style={{ ...inputStyle, width: "50%" }}
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
 
         <textarea style={inputStyle} placeholder="Notes..." value={notes} onChange={(e) => setNotes(e.target.value)} />
 
