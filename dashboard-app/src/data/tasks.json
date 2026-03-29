@@ -1,0 +1,432 @@
+[
+  {
+    "Task": "Variables, Data Types",
+    "Category": "Java",
+    "Date": "2026-04-08"
+  },
+  {
+    "Task": "Intro Arrays",
+    "Category": "DSA",
+    "Date": "2026-04-08"
+  },
+  {
+    "Task": "If-else",
+    "Category": "Java",
+    "Date": "2026-04-09"
+  },
+  {
+    "Task": "Max/Min",
+    "Category": "DSA",
+    "Date": "2026-04-09"
+  },
+  {
+    "Task": "Loops",
+    "Category": "Java",
+    "Date": "2026-04-10"
+  },
+  {
+    "Task": "Reverse Array",
+    "Category": "DSA",
+    "Date": "2026-04-10"
+  },
+  {
+    "Task": "HTML Basics",
+    "Category": "Web",
+    "Date": "2026-04-10"
+  },
+  {
+    "Task": "Functions",
+    "Category": "Java",
+    "Date": "2026-04-11"
+  },
+  {
+    "Task": "Linear Search",
+    "Category": "DSA",
+    "Date": "2026-04-11"
+  },
+  {
+    "Task": "Excel + Revision",
+    "Category": "Tools",
+    "Date": "2026-04-12"
+  },
+  {
+    "Task": "Word + PPT",
+    "Category": "Tools",
+    "Date": "2026-04-13"
+  },
+  {
+    "Task": "Arrays Revision",
+    "Category": "Java",
+    "Date": "2026-04-14"
+  },
+  {
+    "Task": "Mixed",
+    "Category": "DSA",
+    "Date": "2026-04-14"
+  },
+  {
+    "Task": "Strings",
+    "Category": "Java",
+    "Date": "2026-04-15"
+  },
+  {
+    "Task": "Palindrome",
+    "Category": "DSA",
+    "Date": "2026-04-15"
+  },
+  {
+    "Task": "String Methods",
+    "Category": "Java",
+    "Date": "2026-04-16"
+  },
+  {
+    "Task": "Count chars",
+    "Category": "DSA",
+    "Date": "2026-04-16"
+  },
+  {
+    "Task": "Functions Deep",
+    "Category": "Java",
+    "Date": "2026-04-17"
+  },
+  {
+    "Task": "Recursion Intro",
+    "Category": "DSA",
+    "Date": "2026-04-17"
+  },
+  {
+    "Task": "CSS Basics",
+    "Category": "Web",
+    "Date": "2026-04-17"
+  },
+  {
+    "Task": "Practice",
+    "Category": "Java",
+    "Date": "2026-04-18"
+  },
+  {
+    "Task": "Mixed",
+    "Category": "DSA",
+    "Date": "2026-04-18"
+  },
+  {
+    "Task": "Excel/PPT",
+    "Category": "Tools",
+    "Date": "2026-04-19"
+  },
+  {
+    "Task": "Tools + Revision",
+    "Category": "Tools",
+    "Date": "2026-04-20"
+  },
+  {
+    "Task": "Revision",
+    "Category": "Java",
+    "Date": "2026-04-21"
+  },
+  {
+    "Task": "Weak Areas",
+    "Category": "DSA",
+    "Date": "2026-04-21"
+  },
+  {
+    "Task": "Linked List",
+    "Category": "Java",
+    "Date": "2026-04-22"
+  },
+  {
+    "Task": "LL Basics",
+    "Category": "DSA",
+    "Date": "2026-04-22"
+  },
+  {
+    "Task": "LL Ops",
+    "Category": "Java",
+    "Date": "2026-04-23"
+  },
+  {
+    "Task": "Problems",
+    "Category": "DSA",
+    "Date": "2026-04-23"
+  },
+  {
+    "Task": "Stack",
+    "Category": "Java",
+    "Date": "2026-04-24"
+  },
+  {
+    "Task": "Stack Problems",
+    "Category": "DSA",
+    "Date": "2026-04-24"
+  },
+  {
+    "Task": "Queue",
+    "Category": "Java",
+    "Date": "2026-04-25"
+  },
+  {
+    "Task": "Queue Problems",
+    "Category": "DSA",
+    "Date": "2026-04-25"
+  },
+  {
+    "Task": "JS Intro",
+    "Category": "Web",
+    "Date": "2026-04-25"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-04-26"
+  },
+  {
+    "Task": "Tools + Revision",
+    "Category": "Tools",
+    "Date": "2026-04-27"
+  },
+  {
+    "Task": "Recursion",
+    "Category": "Java",
+    "Date": "2026-04-28"
+  },
+  {
+    "Task": "Practice",
+    "Category": "DSA",
+    "Date": "2026-04-28"
+  },
+  {
+    "Task": "Sorting",
+    "Category": "Java",
+    "Date": "2026-04-29"
+  },
+  {
+    "Task": "Sorting",
+    "Category": "DSA",
+    "Date": "2026-04-29"
+  },
+  {
+    "Task": "Binary Search",
+    "Category": "Java",
+    "Date": "2026-04-30"
+  },
+  {
+    "Task": "Search",
+    "Category": "DSA",
+    "Date": "2026-04-30"
+  },
+  {
+    "Task": "HashMap",
+    "Category": "Java",
+    "Date": "2026-05-01"
+  },
+  {
+    "Task": "Hash",
+    "Category": "DSA",
+    "Date": "2026-05-01"
+  },
+  {
+    "Task": "HashSet",
+    "Category": "Java",
+    "Date": "2026-05-02"
+  },
+  {
+    "Task": "Practice",
+    "Category": "DSA",
+    "Date": "2026-05-02"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-05-03"
+  },
+  {
+    "Task": "Tools + Revision",
+    "Category": "Tools",
+    "Date": "2026-05-04"
+  },
+  {
+    "Task": "Time Complexity",
+    "Category": "Java",
+    "Date": "2026-05-05"
+  },
+  {
+    "Task": "Mixed",
+    "Category": "DSA",
+    "Date": "2026-05-05"
+  },
+  {
+    "Task": "Revision",
+    "Category": "Java",
+    "Date": "2026-05-06"
+  },
+  {
+    "Task": "Practice",
+    "Category": "DSA",
+    "Date": "2026-05-06"
+  },
+  {
+    "Task": "Revision",
+    "Category": "Java",
+    "Date": "2026-05-07"
+  },
+  {
+    "Task": "Practice",
+    "Category": "DSA",
+    "Date": "2026-05-07"
+  },
+  {
+    "Task": "Dashboard Setup (React Init)",
+    "Category": "Project",
+    "Date": "2026-05-08"
+  },
+  {
+    "Task": "UI Layout",
+    "Category": "Project",
+    "Date": "2026-05-09"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-05-10"
+  },
+  {
+    "Task": "Task Input System",
+    "Category": "Project",
+    "Date": "2026-05-11"
+  },
+  {
+    "Task": "Task List Display",
+    "Category": "Project",
+    "Date": "2026-05-12"
+  },
+  {
+    "Task": "CRUD Operations",
+    "Category": "Project",
+    "Date": "2026-05-13"
+  },
+  {
+    "Task": "UI Improvements",
+    "Category": "Project",
+    "Date": "2026-05-14"
+  },
+  {
+    "Task": "Auth Integration",
+    "Category": "Project",
+    "Date": "2026-05-15"
+  },
+  {
+    "Task": "Database Setup",
+    "Category": "Project",
+    "Date": "2026-05-16"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-05-17"
+  },
+  {
+    "Task": "Realtime Sync",
+    "Category": "Project",
+    "Date": "2026-05-18"
+  },
+  {
+    "Task": "Dashboard Polish",
+    "Category": "Project",
+    "Date": "2026-05-19"
+  },
+  {
+    "Task": "Responsive Design",
+    "Category": "Project",
+    "Date": "2026-05-20"
+  },
+  {
+    "Task": "Final Dashboard",
+    "Category": "Project",
+    "Date": "2026-05-21"
+  },
+  {
+    "Task": "ML Project Review",
+    "Category": "Project",
+    "Date": "2026-05-22"
+  },
+  {
+    "Task": "Backend Cleanup",
+    "Category": "Project",
+    "Date": "2026-05-23"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-05-24"
+  },
+  {
+    "Task": "Frontend Improve",
+    "Category": "Project",
+    "Date": "2026-05-25"
+  },
+  {
+    "Task": "Project Testing",
+    "Category": "Project",
+    "Date": "2026-05-26"
+  },
+  {
+    "Task": "Optimization",
+    "Category": "Project",
+    "Date": "2026-05-27"
+  },
+  {
+    "Task": "Final ML Project",
+    "Category": "Project",
+    "Date": "2026-05-28"
+  },
+  {
+    "Task": "Portfolio Setup",
+    "Category": "Project",
+    "Date": "2026-05-29"
+  },
+  {
+    "Task": "Add Projects",
+    "Category": "Project",
+    "Date": "2026-05-30"
+  },
+  {
+    "Task": "Tools",
+    "Category": "Tools",
+    "Date": "2026-05-31"
+  },
+  {
+    "Task": "UI + Animations",
+    "Category": "Project",
+    "Date": "2026-06-01"
+  },
+  {
+    "Task": "Deploy Portfolio",
+    "Category": "Project",
+    "Date": "2026-06-02"
+  },
+  {
+    "Task": "Resume + GitHub",
+    "Category": "Project",
+    "Date": "2026-06-03"
+  },
+  {
+    "Task": "Interview Prep",
+    "Category": "Project",
+    "Date": "2026-06-04"
+  },
+  {
+    "Task": "Mock Practice",
+    "Category": "Project",
+    "Date": "2026-06-05"
+  },
+  {
+    "Task": "Final Revision",
+    "Category": "Project",
+    "Date": "2026-06-06"
+  },
+  {
+    "Task": "Final Review",
+    "Category": "Tools",
+    "Date": "2026-06-07"
+  }
+]

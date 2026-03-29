@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
+import tasksData from "./data/tasks.json";
 
 function App() {
   const ACCESS_CODE = "5258745636951";
@@ -29,7 +29,23 @@ function App() {
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
   ];
 
-  const [bg] = useState(backgrounds[Math.floor(Math.random() * backgrounds.length)]);
+  const [bg] = useState(
+    backgrounds[Math.floor(Math.random() * backgrounds.length)]
+  );
+
+  // 🔥 Load JSON Tasks
+  useEffect(() => {
+    const formatted = tasksData.map((t, i) => ({
+      id: Date.now() + i,
+      text: t.Task,
+      category: t.Category,
+      date: t.Date,
+      notes: "",
+      completed: false
+    }));
+
+    setTasks(formatted);
+  }, []);
 
   // 🔐 ACCESS SCREEN
   if (!access) {
@@ -58,31 +74,6 @@ function App() {
       </div>
     );
   }
-
-  // 📤 Excel Upload
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (evt) => {
-      const wb = XLSX.read(evt.target.result, { type: "binary" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(sheet);
-
-      const newTasks = data.map((row, i) => ({
-        id: Date.now() + i,
-        text: row.Task,
-        category: row.Category,
-        date: row.Date,
-        notes: "",
-        completed: false
-      }));
-
-      setTasks(prev => [...prev, ...newTasks]);
-    };
-
-    reader.readAsBinaryString(file);
-  };
 
   // ➕ Add Task
   const addTask = () => {
@@ -131,12 +122,13 @@ function App() {
     setTasks(tasks.filter(t => t.id !== id));
   };
 
+  // 🔥 UPDATED FILTER LOGIC (includes upcoming tasks)
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (t.date === selectedDate) return match;
-
     if (t.date < selectedDate && !t.completed) return match;
+    if (t.date > selectedDate) return match;
 
     return false;
   });
@@ -157,7 +149,10 @@ function App() {
 
         {/* Top Bar */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+          <input
+            placeholder="Search..."
+            onChange={(e)=>setSearch(e.target.value)}
+          />
 
           <input
             type="date"
@@ -165,9 +160,6 @@ function App() {
             onChange={(e)=>setSelectedDate(e.target.value)}
           />
         </div>
-
-        {/* Upload */}
-        <input type="file" onChange={handleUpload} />
 
         {/* Add/Edit */}
         <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
@@ -189,8 +181,11 @@ function App() {
               margin: "10px 0",
               padding: "10px",
               borderRadius: "10px",
-              cursor: "pointer"
+              cursor: "pointer",
+              transition: "0.3s"
             }}
+            onMouseEnter={(e)=>e.currentTarget.style.transform="scale(1.02)"}
+            onMouseLeave={(e)=>e.currentTarget.style.transform="scale(1)"}
             onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
           >
             <div>
@@ -203,9 +198,9 @@ function App() {
               <div>{t.notes}</div>
             )}
 
-            <button onClick={()=>startEdit(t)}>Edit</button>
-            <button onClick={()=>deleteTask(t.id)}>Delete</button>
-            <button onClick={()=>toggleComplete(t.id)}>Toggle</button>
+            <button onClick={(e)=>{e.stopPropagation(); startEdit(t)}}>✏️</button>
+            <button onClick={(e)=>{e.stopPropagation(); deleteTask(t.id)}}>❌</button>
+            <button onClick={(e)=>{e.stopPropagation(); toggleComplete(t.id)}}>✔️</button>
           </div>
         ))}
       </div>
