@@ -32,6 +32,15 @@ function App() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
+  // 🔥 Random Background Images
+  const backgrounds = [
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
+  ];
+  const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
@@ -73,6 +82,10 @@ function App() {
     setDate("");
   };
 
+  const deleteTask = async (id) => {
+    await deleteDoc(doc(db, "tasks", id));
+  };
+
   const toggleComplete = async (t) => {
     const ref = doc(db, "tasks", t.id);
     await updateDoc(ref, { completed: !t.completed });
@@ -97,15 +110,34 @@ function App() {
   };
 
   const circleStyle = {
-    width: "100px",
-    height: "100px",
+    width: "120px",
+    height: "120px",
     borderRadius: "50%",
-    background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #ddd 0deg)`,
+    background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #e0e0e0 0deg)`,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     margin: "20px auto",
     fontWeight: "bold",
+    fontSize: "18px",
+  };
+
+  const inputStyle = {
+    padding: "10px",
+    margin: "5px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+    width: "100%",
+  };
+
+  const buttonStyle = {
+    padding: "10px",
+    margin: "5px",
+    borderRadius: "6px",
+    border: "none",
+    backgroundColor: "#4caf50",
+    color: "white",
+    cursor: "pointer",
   };
 
   if (!user) {
@@ -113,106 +145,98 @@ function App() {
       <div style={{ textAlign: "center", marginTop: "100px" }}>
         <h2>Login / Signup</h2>
 
-        <input
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <input style={inputStyle} placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
 
         <div>
           <input
+            style={inputStyle}
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             onChange={(e) => setPassword(e.target.value)}
           />
-          <span
-            style={{ cursor: "pointer", marginLeft: "5px" }}
-            onClick={() => setShowPassword(!showPassword)}
-          >
+          <span onClick={() => setShowPassword(!showPassword)} style={{ cursor: "pointer" }}>
             {showPassword ? "🙈" : "👁️"}
           </span>
         </div>
 
-        <br />
-
-        <button onClick={() => signInWithEmailAndPassword(auth, email, password)}>
-          Login
-        </button>
-
-        <button onClick={() => createUserWithEmailAndPassword(auth, email, password)}>
-          Signup
-        </button>
+        <button style={buttonStyle} onClick={() => signInWithEmailAndPassword(auth, email, password)}>Login</button>
+        <button style={buttonStyle} onClick={() => createUserWithEmailAndPassword(auth, email, password)}>Signup</button>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "auto" }}>
-      <h1>📊 Productivity Dashboard</h1>
+    <div style={{
+      minHeight: "100vh",
+      backgroundImage: `url(${randomBg})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      padding: "20px"
+    }}>
+      <div style={{
+        backgroundColor: "rgba(255,255,255,0.9)",
+        padding: "20px",
+        borderRadius: "10px",
+        maxWidth: "700px",
+        margin: "auto"
+      }}>
 
-      <button onClick={() => signOut(auth)}>Logout</button>
+        <h1 style={{ textAlign: "center" }}>📊 Productivity Dashboard</h1>
 
-      {/* Progress */}
-      <div style={circleStyle}>{progress}%</div>
+        <button style={buttonStyle} onClick={() => signOut(auth)}>Logout</button>
 
-      {/* Inputs */}
-      <input
-        value={task}
-        onChange={(e) => setTask(e.target.value)}
-        placeholder="Enter task"
-      />
+        <div style={circleStyle}>{progress}%</div>
 
-      <select onChange={(e) => setCategory(e.target.value)}>
-        <option>Work</option>
-        <option>Study</option>
-        <option>Personal</option>
-      </select>
+        <input style={inputStyle} value={task} onChange={(e) => setTask(e.target.value)} placeholder="Enter task" />
 
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
+        <select style={inputStyle} onChange={(e) => setCategory(e.target.value)}>
+          <option>Work</option>
+          <option>Study</option>
+          <option>Personal</option>
+        </select>
 
-      <textarea
-        placeholder="Notes..."
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+        <input style={inputStyle} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
-      <button onClick={addTask}>Add</button>
+        <textarea style={inputStyle} placeholder="Notes..." value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-      {/* Search */}
-      <input
-        placeholder="Search..."
-        onChange={(e) => setSearch(e.target.value)}
-      />
+        <button style={buttonStyle} onClick={addTask}>Add Task</button>
 
-      <select onChange={(e) => setFilter(e.target.value)}>
-        <option>All</option>
-        <option>Completed</option>
-        <option>Pending</option>
-      </select>
+        <input style={inputStyle} placeholder="Search..." onChange={(e) => setSearch(e.target.value)} />
 
-      {/* Task List */}
-      <ul>
+        <select style={inputStyle} onChange={(e) => setFilter(e.target.value)}>
+          <option>All</option>
+          <option>Completed</option>
+          <option>Pending</option>
+        </select>
+
         {filteredTasks.map((t) => (
-          <li key={t.id}>
-            <span
+          <div key={t.id} style={{
+            background: "#fff",
+            padding: "15px",
+            margin: "10px 0",
+            borderRadius: "10px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
+          }}>
+            <div
               onClick={() => toggleComplete(t)}
               style={{
                 textDecoration: t.completed ? "line-through" : "none",
                 cursor: "pointer",
-                marginRight: "10px",
+                fontWeight: "bold"
               }}
             >
               {t.completed ? "✔️" : "⭕"} {t.text}
-            </span>
+            </div>
 
             <div>📂 {t.category} | 📅 {formatDate(t.date)}</div>
             <div>📝 {t.notes}</div>
-          </li>
+
+            <button style={{ ...buttonStyle, backgroundColor: "#f44336" }} onClick={() => deleteTask(t.id)}>
+              Delete
+            </button>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
