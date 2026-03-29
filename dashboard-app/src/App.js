@@ -18,30 +18,25 @@ import {
 } from "firebase/auth";
 
 function App() {
-  // 🔐 Auth states
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  // 📊 Dashboard states
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Work");
   const [tasks, setTasks] = useState([]);
+  const [date, setDate] = useState("");
+  const [notes, setNotes] = useState("");
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [darkMode, setDarkMode] = useState(false);
 
-  // 🔐 Auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
 
-  // 🔥 Real-time user-specific tasks
   useEffect(() => {
     if (!user) return;
 
@@ -51,70 +46,16 @@ function App() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loadedTasks = snapshot.docs.map((doc) => ({
+      const loaded = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setTasks(loadedTasks);
+      setTasks(loaded);
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  // 🔐 SIGNUP
-  const handleSignup = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      alert("Enter a valid email (example@gmail.com)");
-      return;
-    }
-
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
-      return;
-    }
-
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      alert("Signup successful ✅");
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // 🔐 LOGIN
-  const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login successful ✅");
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // 🔐 LOGOUT
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // ➕ Add Task
   const addTask = async () => {
     if (task.trim() === "") return;
 
@@ -122,128 +63,122 @@ function App() {
       text: task,
       completed: false,
       category,
+      date,
+      notes,
       userId: user.uid,
     });
 
     setTask("");
+    setNotes("");
+    setDate("");
   };
 
-  // ❌ Delete Task
   const deleteTask = async (id) => {
     await deleteDoc(doc(db, "tasks", id));
   };
 
-  // ✅ Toggle Complete
-  const toggleComplete = async (taskItem) => {
-    const taskRef = doc(db, "tasks", taskItem.id);
-
-    await updateDoc(taskRef, {
-      completed: !taskItem.completed,
-    });
+  const toggleComplete = async (t) => {
+    const ref = doc(db, "tasks", t.id);
+    await updateDoc(ref, { completed: !t.completed });
   };
 
-  // 🎨 Category Colors
-  const getCategoryColor = (cat) => {
-    switch (cat) {
-      case "Work":
-        return "#007bff";
-      case "Study":
-        return "green";
-      case "Personal":
-        return "orange";
-      default:
-        return "gray";
-    }
-  };
-
-  // 🔍 Filter + Search
   const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.text
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    if (filter === "Completed") return t.completed && matchesSearch;
-    if (filter === "Pending") return !t.completed && matchesSearch;
-
-    return matchesSearch;
+    const match = t.text.toLowerCase().includes(search.toLowerCase());
+    if (filter === "Completed") return t.completed && match;
+    if (filter === "Pending") return !t.completed && match;
+    return match;
   });
 
-  const completedTasks = tasks.filter((t) => t.completed).length;
-  const progress =
-    tasks.length === 0
-      ? 0
-      : Math.round((completedTasks / tasks.length) * 100);
+  const completed = tasks.filter((t) => t.completed).length;
+  const progress = tasks.length
+    ? Math.round((completed / tasks.length) * 100)
+    : 0;
 
-  // 🔐 AUTH UI
+  // 🔵 Circular Progress
+  const circleStyle = {
+    width: "100px",
+    height: "100px",
+    borderRadius: "50%",
+    background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #ddd 0deg)`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "20px auto",
+    fontWeight: "bold",
+  };
+
   if (!user) {
     return (
-      <div style={styles.authContainer}>
-        <h2>🔐 Login / Signup</h2>
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h2>Login / Signup</h2>
 
         <input
           placeholder="Email"
-          value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
         />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-        />
+        <div>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <span
+            style={{ cursor: "pointer", marginLeft: "5px" }}
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </span>
+        </div>
 
-        <button onClick={handleLogin} style={styles.btn}>
+        <br />
+
+        <button onClick={() => signInWithEmailAndPassword(auth, email, password)}>
           Login
         </button>
 
-        <button onClick={handleSignup} style={styles.btn}>
+        <button onClick={() => createUserWithEmailAndPassword(auth, email, password)}>
           Signup
         </button>
       </div>
     );
   }
 
-  // 🔥 DASHBOARD UI
   return (
-    <div
-      style={{
-        ...styles.container,
-        ...(darkMode ? styles.dark : styles.light),
-      }}
-    >
+    <div style={{ padding: "20px", maxWidth: "600px", margin: "auto" }}>
       <h1>📊 Productivity Dashboard</h1>
 
-      <button onClick={handleLogout} style={styles.btn}>
-        Logout
-      </button>
+      <button onClick={() => signOut(auth)}>Logout</button>
 
-      <button onClick={() => setDarkMode(!darkMode)} style={styles.btn}>
-        Toggle Theme
-      </button>
+      {/* 🔵 Circular Progress */}
+      <div style={circleStyle}>{progress}%</div>
 
-      {/* INPUT */}
-      <div style={styles.inputContainer}>
-        <input
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
-          placeholder="Enter task"
-          style={styles.input}
-        />
+      {/* INPUTS */}
+      <input
+        value={task}
+        onChange={(e) => setTask(e.target.value)}
+        placeholder="Enter task"
+      />
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option>Work</option>
-          <option>Study</option>
-          <option>Personal</option>
-        </select>
+      <select onChange={(e) => setCategory(e.target.value)}>
+        <option>Work</option>
+        <option>Study</option>
+        <option>Personal</option>
+      </select>
 
-        <button onClick={addTask}>Add</button>
-      </div>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+      />
+
+      <textarea
+        placeholder="Notes..."
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+      />
+
+      <button onClick={addTask}>Add</button>
 
       {/* SEARCH + FILTER */}
       <input
@@ -256,9 +191,6 @@ function App() {
         <option>Completed</option>
         <option>Pending</option>
       </select>
-
-      {/* STATS */}
-      <p>Progress: {progress}%</p>
 
       {/* TASK LIST */}
       <ul>
@@ -274,9 +206,8 @@ function App() {
               {t.text}
             </span>
 
-            <span style={{ marginLeft: "10px", color: getCategoryColor(t.category) }}>
-              [{t.category}]
-            </span>
+            <div>📂 {t.category} | 📅 {t.date}</div>
+            <div>📝 {t.notes}</div>
 
             <button onClick={() => deleteTask(t.id)}>❌</button>
           </li>
@@ -285,38 +216,5 @@ function App() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: "20px",
-    maxWidth: "600px",
-    margin: "auto",
-  },
-  authContainer: {
-    textAlign: "center",
-    marginTop: "100px",
-  },
-  input: {
-    display: "block",
-    margin: "10px auto",
-    padding: "10px",
-  },
-  btn: {
-    margin: "5px",
-    padding: "10px",
-  },
-  inputContainer: {
-    display: "flex",
-    gap: "10px",
-  },
-  light: {
-    backgroundColor: "#fff",
-    color: "#000",
-  },
-  dark: {
-    backgroundColor: "#121212",
-    color: "#fff",
-  },
-};
 
 export default App;
