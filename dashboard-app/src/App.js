@@ -73,10 +73,6 @@ function App() {
     setDate("");
   };
 
-  const deleteTask = async (id) => {
-    await deleteDoc(doc(db, "tasks", id));
-  };
-
   const toggleComplete = async (t) => {
     const ref = doc(db, "tasks", t.id);
     await updateDoc(ref, { completed: !t.completed });
@@ -94,7 +90,12 @@ function App() {
     ? Math.round((completed / tasks.length) * 100)
     : 0;
 
-  // 🔵 Circular Progress
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
   const circleStyle = {
     width: "100px",
     height: "100px",
@@ -150,10 +151,10 @@ function App() {
 
       <button onClick={() => signOut(auth)}>Logout</button>
 
-      {/* 🔵 Circular Progress */}
+      {/* Progress */}
       <div style={circleStyle}>{progress}%</div>
 
-      {/* INPUTS */}
+      {/* Inputs */}
       <input
         value={task}
         onChange={(e) => setTask(e.target.value)}
@@ -180,7 +181,7 @@ function App() {
 
       <button onClick={addTask}>Add</button>
 
-      {/* SEARCH + FILTER */}
+      {/* Search */}
       <input
         placeholder="Search..."
         onChange={(e) => setSearch(e.target.value)}
@@ -192,7 +193,7 @@ function App() {
         <option>Pending</option>
       </select>
 
-      {/* TASK LIST */}
+      {/* Task List */}
       <ul>
         {filteredTasks.map((t) => (
           <li key={t.id}>
@@ -201,15 +202,14 @@ function App() {
               style={{
                 textDecoration: t.completed ? "line-through" : "none",
                 cursor: "pointer",
+                marginRight: "10px",
               }}
             >
-              {t.text}
+              {t.completed ? "✔️" : "⭕"} {t.text}
             </span>
 
-            <div>📂 {t.category} | 📅 {t.date}</div>
+            <div>📂 {t.category} | 📅 {formatDate(t.date)}</div>
             <div>📝 {t.notes}</div>
-
-            <button onClick={() => deleteTask(t.id)}>❌</button>
           </li>
         ))}
       </ul>
