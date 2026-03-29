@@ -1,33 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { db, auth } from "./firebase";
-import {
-  collection, addDoc, deleteDoc, doc, updateDoc,
-  onSnapshot, query, where
-} from "firebase/firestore";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "firebase/auth";
+import * as XLSX from "xlsx";
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const ACCESS_CODE = "5258745636951";
+
+  const [enteredCode, setEnteredCode] = useState("");
+  const [access, setAccess] = useState(false);
+
+  const [tasks, setTasks] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
+  const [expandedId, setExpandedId] = useState(null);
 
   const [task, setTask] = useState("");
-  const [category, setCategory] = useState("Work");
-  const [tasks, setTasks] = useState([]);
+  const [category, setCategory] = useState("Java");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-
   const [editId, setEditId] = useState(null);
-  const [bgImage, setBgImage] = useState("");
 
   const backgrounds = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
@@ -36,69 +29,81 @@ function App() {
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
   ];
 
-  useEffect(() => {
-    setBgImage(backgrounds[Math.floor(Math.random() * backgrounds.length)]);
-  }, []);
+  const [bg] = useState(backgrounds[Math.floor(Math.random() * backgrounds.length)]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsubscribe();
-  }, []);
+  // 🔐 ACCESS SCREEN
+  if (!access) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundImage: `url(${bg})`,
+        backgroundSize: "cover"
+      }}>
+        <div style={{
+          background: "rgba(255,255,255,0.3)",
+          backdropFilter: "blur(10px)",
+          padding: "30px",
+          borderRadius: "12px"
+        }}>
+          <h2>Enter Access Code</h2>
+          <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
+          <button onClick={()=> {
+            if(enteredCode === ACCESS_CODE) setAccess(true);
+            else alert("Wrong Code");
+          }}>Enter</button>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (!user) return;
+  // 📤 Excel Upload
+  const handleUpload = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
 
-    const q = query(collection(db, "tasks"), where("userId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loaded = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+    reader.onload = (evt) => {
+      const wb = XLSX.read(evt.target.result, { type: "binary" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(sheet);
+
+      const newTasks = data.map((row, i) => ({
+        id: Date.now() + i,
+        text: row.Task,
+        category: row.Category,
+        date: row.Date,
+        notes: "",
+        completed: false
       }));
-      setTasks(loaded);
-    });
 
-    return () => unsubscribe();
-  }, [user]);
+      setTasks(prev => [...prev, ...newTasks]);
+    };
 
-  const addTask = async () => {
-    if (task.trim() === "") return;
-
-    await addDoc(collection(db, "tasks"), {
-      text: task,
-      completed: false,
-      category,
-      date,
-      notes,
-      userId: user.uid,
-    });
-
-    setTask("");
-    setNotes("");
-    setDate("");
-    setCategory("Work");
+    reader.readAsBinaryString(file);
   };
 
-  // ✅ FIXED UPDATE FUNCTION
-  const updateTask = async () => {
-    if (!editId) return;
+  // ➕ Add Task
+  const addTask = () => {
+    if (!task) return;
 
-    const ref = doc(db, "tasks", editId);
+    setTasks([
+      ...tasks,
+      {
+        id: Date.now(),
+        text: task,
+        category,
+        date,
+        notes,
+        completed: false
+      }
+    ]);
 
-    await updateDoc(ref, {
-      text: task,
-      category,
-      date,
-      notes,
-    });
-
-    // 🔥 Proper reset (FIX)
-    setEditId(null);
-    setTask("");
-    setCategory("Work");
-    setDate("");
-    setNotes("");
+    setTask(""); setNotes(""); setDate("");
   };
 
+  // ✏️ Edit
   const startEdit = (t) => {
     setTask(t.text);
     setCategory(t.category);
@@ -107,179 +112,100 @@ function App() {
     setEditId(t.id);
   };
 
-  const deleteTask = async (id) => {
-    await deleteDoc(doc(db, "tasks", id));
+  const updateTask = () => {
+    setTasks(tasks.map(t =>
+      t.id === editId ? { ...t, text: task, category, date, notes } : t
+    ));
+
+    setEditId(null);
+    setTask(""); setDate(""); setNotes("");
   };
 
-  const toggleComplete = async (t) => {
-    const ref = doc(db, "tasks", t.id);
-    await updateDoc(ref, { completed: !t.completed });
+  const toggleComplete = (id) => {
+    setTasks(tasks.map(t =>
+      t.id === id ? { ...t, completed: !t.completed } : t
+    ));
   };
 
-  const filteredTasks = tasks.filter((t) => {
+  const deleteTask = (id) => {
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
-    if (filter === "Completed") return t.completed && match;
-    if (filter === "Pending") return !t.completed && match;
-    return match;
+
+    if (t.date === selectedDate) return match;
+
+    if (t.date < selectedDate && !t.completed) return match;
+
+    return false;
   });
-
-  const completed = tasks.filter((t) => t.completed).length;
-  const progress = tasks.length
-    ? Math.round((completed / tasks.length) * 100)
-    : 0;
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const [y, m, d] = dateStr.split("-");
-    return `${d}-${m}-${y}`;
-  };
-
-  const inputStyle = {
-    padding: "10px",
-    margin: "5px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    width: "100%",
-  };
-
-  const buttonStyle = {
-    padding: "10px",
-    margin: "5px",
-    borderRadius: "6px",
-    border: "none",
-    backgroundColor: "#4caf50",
-    color: "white",
-    cursor: "pointer",
-    transition: "0.3s"
-  };
-
-  if (!user) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: "cover"
-      }}>
-        <div style={{
-          background: "rgba(255,255,255,0.95)",
-          padding: "30px",
-          borderRadius: "12px",
-          width: "300px",
-          textAlign: "center"
-        }}>
-          <h2>Login</h2>
-
-          <input style={inputStyle} placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-
-          <div>
-            <input
-              style={inputStyle}
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span onClick={() => setShowPassword(!showPassword)} style={{ cursor: "pointer" }}>
-              {showPassword ? "🙈" : "👁️"}
-            </span>
-          </div>
-
-          <button style={buttonStyle} onClick={() => signInWithEmailAndPassword(auth, email, password)}>Login</button>
-          <button style={buttonStyle} onClick={() => createUserWithEmailAndPassword(auth, email, password)}>Signup</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundImage: `url(${bgImage})`,
+      backgroundImage: `url(${bg})`,
       backgroundSize: "cover",
       padding: "20px"
     }}>
       <div style={{
-        background: "rgba(255,255,255,0.9)",
+        background: "rgba(255,255,255,0.3)",
+        backdropFilter: "blur(10px)",
         padding: "20px",
-        borderRadius: "10px",
-        maxWidth: "700px",
-        margin: "auto",
-        position: "relative"
+        borderRadius: "12px"
       }}>
 
-        <h1>📊 Dashboard</h1>
-        <button onClick={() => signOut(auth)}>Logout</button>
+        {/* Top Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
 
-        {/* Progress Ring */}
-        <div style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          width: "100px",
-          height: "100px",
-          borderRadius: "50%",
-          background: `conic-gradient(#4caf50 ${progress * 3.6}deg, #ddd 0deg)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          <div style={{
-            width: "70px",
-            height: "70px",
-            borderRadius: "50%",
-            background: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            {progress}%
-          </div>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e)=>setSelectedDate(e.target.value)}
+          />
         </div>
 
-        <input style={inputStyle} value={task} onChange={(e) => setTask(e.target.value)} placeholder="Task" />
+        {/* Upload */}
+        <input type="file" onChange={handleUpload} />
 
-        <select style={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option>Work</option>
-          <option>Study</option>
-          <option>Personal</option>
-        </select>
+        {/* Add/Edit */}
+        <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
+        <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" />
+        <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} />
+        <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
-        <input style={{ ...inputStyle, width: "50%" }} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-
-        <textarea style={inputStyle} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-        {/* ✅ FIXED BUTTON SWITCH */}
-        {editId !== null ? (
-          <button style={buttonStyle} onClick={updateTask}>Update Task</button>
+        {editId ? (
+          <button onClick={updateTask}>Update</button>
         ) : (
-          <button style={buttonStyle} onClick={addTask}>Add Task</button>
+          <button onClick={addTask}>Add</button>
         )}
 
-        <input style={inputStyle} placeholder="Search..." onChange={(e) => setSearch(e.target.value)} />
-
-        {filteredTasks.map((t) => (
+        {/* Tasks */}
+        {filteredTasks.map(t => (
           <div key={t.id}
             style={{
               background: "#fff",
-              padding: "15px",
               margin: "10px 0",
+              padding: "10px",
               borderRadius: "10px",
-              transition: "0.3s"
+              cursor: "pointer"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
-            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+            onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
           >
-            <div onClick={() => toggleComplete(t)}>
+            <div>
               {t.completed ? "✔️" : "⭕"} {t.text}
             </div>
 
-            <div>📅 {formatDate(t.date)}</div>
-            <div>📝 {t.notes}</div>
+            <div>{t.category} | {t.date}</div>
 
-            <button onClick={() => startEdit(t)}>✏️</button>
-            <button onClick={() => deleteTask(t.id)}>❌</button>
+            {expandedId === t.id && (
+              <div>{t.notes}</div>
+            )}
+
+            <button onClick={()=>startEdit(t)}>Edit</button>
+            <button onClick={()=>deleteTask(t.id)}>Delete</button>
+            <button onClick={()=>toggleComplete(t.id)}>Toggle</button>
           </div>
         ))}
       </div>
