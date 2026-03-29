@@ -72,10 +72,16 @@ function App() {
       userId: user.uid,
     });
 
-    setTask(""); setNotes(""); setDate("");
+    setTask("");
+    setNotes("");
+    setDate("");
+    setCategory("Work");
   };
 
+  // ✅ FIXED UPDATE FUNCTION
   const updateTask = async () => {
+    if (!editId) return;
+
     const ref = doc(db, "tasks", editId);
 
     await updateDoc(ref, {
@@ -85,8 +91,12 @@ function App() {
       notes,
     });
 
+    // 🔥 Proper reset (FIX)
     setEditId(null);
-    setTask(""); setNotes(""); setDate("");
+    setTask("");
+    setCategory("Work");
+    setDate("");
+    setNotes("");
   };
 
   const startEdit = (t) => {
@@ -229,16 +239,19 @@ function App() {
         </div>
 
         <input style={inputStyle} value={task} onChange={(e) => setTask(e.target.value)} placeholder="Task" />
-        <select style={inputStyle} onChange={(e) => setCategory(e.target.value)}>
+
+        <select style={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
           <option>Work</option>
           <option>Study</option>
           <option>Personal</option>
         </select>
 
         <input style={{ ...inputStyle, width: "50%" }} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
         <textarea style={inputStyle} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-        {editId ? (
+        {/* ✅ FIXED BUTTON SWITCH */}
+        {editId !== null ? (
           <button style={buttonStyle} onClick={updateTask}>Update Task</button>
         ) : (
           <button style={buttonStyle} onClick={addTask}>Add Task</button>
@@ -262,8 +275,8 @@ function App() {
               {t.completed ? "✔️" : "⭕"} {t.text}
             </div>
 
-            <div>{formatDate(t.date)}</div>
-            <div>{t.notes}</div>
+            <div>📅 {formatDate(t.date)}</div>
+            <div>📝 {t.notes}</div>
 
             <button onClick={() => startEdit(t)}>✏️</button>
             <button onClick={() => deleteTask(t.id)}>❌</button>
