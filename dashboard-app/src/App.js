@@ -10,33 +10,25 @@ function App() {
 
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+
   const [selectedDate, setSelectedDate] = useState(
     new Date().toLocaleDateString("en-CA")
   );
 
   const [task, setTask] = useState("");
-  const [category, setCategory] = useState("Java");
-  const [customCategory, setCustomCategory] = useState("");
+  const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
 
   const [editId, setEditId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
-  const backgrounds = [
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
-    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308",
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
-  ];
+  const defaultCategories = ["Java", "DSA", "Web", "Project", "Tools"];
 
-  const [bg] = useState(
-    backgrounds[Math.floor(Math.random() * backgrounds.length)]
-  );
-
-  // LOAD DATA
+  // LOAD
   useEffect(() => {
     if (isGuest) {
-      setTasks([]); // guest starts empty
+      setTasks([]);
       return;
     }
 
@@ -44,11 +36,8 @@ function App() {
 
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed && parsed.length > 0) {
-        setTasks(parsed);
-      } else {
-        loadJSON();
-      }
+      if (parsed && parsed.length > 0) setTasks(parsed);
+      else loadJSON();
     } else {
       loadJSON();
     }
@@ -63,50 +52,39 @@ function App() {
       notes: "",
       completed: false
     }));
-
     setTasks(formatted);
   };
 
-  // SAVE (only for admin mode)
+  // SAVE
   useEffect(() => {
     if (!isGuest) {
       localStorage.setItem("tasks", JSON.stringify(tasks));
     }
   }, [tasks, isGuest]);
 
-  // LOGIN SCREEN
+  // LOGIN
   if (!access) {
     return (
-      <div style={styles.center(bg)}>
+      <div style={styles.center}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
+          <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
 
-          <input
-            value={enteredCode}
-            onChange={(e) => setEnteredCode(e.target.value)}
-          />
-
-          <button
-            onClick={() => {
-              if (ACCESS_CODES.includes(enteredCode)) {
-                setAccess(true);
-                setIsGuest(false);
-              } else {
-                alert("Invalid Code");
-              }
-            }}
-          >
+          <button onClick={()=>{
+            if (ACCESS_CODES.includes(enteredCode)) {
+              setAccess(true);
+              setIsGuest(false);
+            } else alert("Invalid Code");
+          }}>
             Enter
           </button>
 
           <hr />
 
-          <button
-            onClick={() => {
-              setAccess(true);
-              setIsGuest(true);
-            }}
-          >
+          <button onClick={()=>{
+            setAccess(true);
+            setIsGuest(true);
+          }}>
             Continue as Guest
           </button>
         </div>
@@ -114,107 +92,85 @@ function App() {
     );
   }
 
-  const finalCategory = category === "Other" ? customCategory : category;
+  // 🔥 CATEGORY LIST
+  const uniqueCategories = [...new Set(tasks.map(t => t.category))];
+
+  const predefined = defaultCategories;
+  const customCategories = uniqueCategories.filter(c => !predefined.includes(c));
+
+  const finalCategories = isGuest ? uniqueCategories : defaultCategories;
 
   // ADD
   const addTask = () => {
-    if (!task) return;
+    if (!task || !category) return;
 
-    setTasks([
-      ...tasks,
-      {
-        id: Date.now(),
-        text: task,
-        category: finalCategory,
-        date: selectedDate,
-        notes,
-        completed: false
-      }
-    ]);
+    setTasks([...tasks, {
+      id: Date.now(),
+      text: task,
+      category,
+      date: selectedDate,
+      notes,
+      completed: false
+    }]);
 
-    setTask("");
-    setNotes("");
-    setCustomCategory("");
+    setTask(""); setCategory(""); setNotes("");
   };
 
-  // EDIT
-  const startEdit = (t) => {
-    setTask(t.text);
-    setCategory(t.category);
-    setNotes(t.notes);
-    setEditId(t.id);
-  };
+  // FILTER
+  const filteredTasks = tasks.filter(t => {
+    const searchMatch =
+      t.text.toLowerCase().includes(search.toLowerCase());
 
-  const updateTask = () => {
-    setTasks(
-      tasks.map((t) =>
-        t.id === editId
-          ? {
-              ...t,
-              text: task,
-              category: finalCategory,
-              notes,
-              date: selectedDate
-            }
-          : t
-      )
-    );
+    const categoryMatch =
+      categoryFilter === "All" ||
+      (categoryFilter === "Other"
+        ? customCategories.includes(t.category)
+        : t.category === categoryFilter);
 
-    setEditId(null);
-    setTask("");
-    setNotes("");
-  };
+    if (search.trim() !== "") return searchMatch && categoryMatch;
 
-  // COMPLETE
-  const toggleComplete = (id) => {
-    setTasks(
-      tasks.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed } : t
-      )
-    );
-  };
-
-  // SEARCH
-  const filteredTasks = tasks.filter((t) => {
-    const searchText = search.toLowerCase();
-
-    const match =
-      t.text.toLowerCase().includes(searchText) ||
-      t.category.toLowerCase().includes(searchText);
-
-    if (search.trim() !== "") return match;
-
-    if (t.date === selectedDate) return true;
-    if (t.date < selectedDate && !t.completed) return true;
+    if (t.date === selectedDate && categoryMatch) return true;
+    if (t.date < selectedDate && !t.completed && categoryMatch) return true;
 
     return false;
   });
 
   // PROGRESS
   const total = tasks.length;
-  const completed = tasks.filter((t) => t.completed).length;
+  const completed = tasks.filter(t => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
-  const dayTasks = tasks.filter((t) => t.date === selectedDate);
-  const dayCompleted = dayTasks.filter((t) => t.completed).length;
+  const dayTasks = tasks.filter(t => t.date === selectedDate);
+  const dayCompleted = dayTasks.filter(t => t.completed).length;
   const dayPercent = dayTasks.length
     ? Math.round((dayCompleted / dayTasks.length) * 100)
     : 0;
 
   return (
-    <div style={styles.page(bg)}>
+    <div style={styles.page}>
       <div style={styles.container}>
-        {isGuest && <div style={{ color: "red" }}>Guest Mode</div>}
+
+        {isGuest && <div style={{color:"red"}}>Guest Mode</div>}
+
+        {/* RESULT COUNT */}
+        <div>Results: {filteredTasks.length}</div>
 
         {/* PROGRESS */}
-        <div>{completed}/{total} Completed</div>
+        <div>{completed}/{total}</div>
         <div style={styles.progressBar}>
-          <div style={{ ...styles.progressFill, width: `${percent}%` }} />
+          <div style={{...styles.progressFill, width:`${percent}%`}} />
         </div>
 
         {/* TOP */}
         <div style={styles.top}>
           <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+
+          <select onChange={(e)=>setCategoryFilter(e.target.value)}>
+            <option>All</option>
+            {predefined.map(c => <option key={c}>{c}</option>)}
+            <option>Other</option>
+          </select>
+
           <input type="date" value={selectedDate} onChange={(e)=>setSelectedDate(e.target.value)} />
 
           <div style={styles.ring(dayPercent)}>
@@ -225,41 +181,30 @@ function App() {
         {/* INPUT */}
         <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
 
-        <select value={category} onChange={(e)=>setCategory(e.target.value)}>
-          <option>Java</option>
-          <option>DSA</option>
-          <option>Web</option>
-          <option>Project</option>
-          <option>Tools</option>
-          <option>Other</option>
-        </select>
-
-        {category === "Other" && (
+        {/* CATEGORY INPUT */}
+        {isGuest ? (
           <input
-            placeholder="Custom category"
-            value={customCategory}
-            onChange={(e)=>setCustomCategory(e.target.value)}
+            placeholder="Enter category"
+            value={category}
+            onChange={(e)=>setCategory(e.target.value)}
           />
+        ) : (
+          <select value={category} onChange={(e)=>setCategory(e.target.value)}>
+            <option value="">Select</option>
+            {defaultCategories.map(c => <option key={c}>{c}</option>)}
+            {customCategories.map(c => <option key={c}>{c}</option>)}
+          </select>
         )}
 
         <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
-        <button onClick={editId ? updateTask : addTask}>
-          {editId ? "Update" : "Add"}
-        </button>
+        <button onClick={addTask}>Add</button>
 
-        {/* TASK LIST */}
-        {filteredTasks.map((t) => (
-          <div key={t.id} style={styles.task}
-            onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
-          >
-            <div>{t.completed ? "✔️" : "⭕"} {t.text}</div>
+        {/* TASKS */}
+        {filteredTasks.map(t => (
+          <div key={t.id} style={styles.task}>
+            {t.completed ? "✔️" : "⭕"} {t.text}
             <div>{t.category} | {t.date}</div>
-
-            {expandedId === t.id && <div>{t.notes}</div>}
-
-            <button onClick={(e)=>{e.stopPropagation(); startEdit(t)}}>✏️</button>
-            <button onClick={(e)=>{e.stopPropagation(); toggleComplete(t.id)}}>✔️</button>
           </div>
         ))}
       </div>
@@ -268,16 +213,21 @@ function App() {
 }
 
 const styles = {
-  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
-  container: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
-  progressBar: { height: "10px", background: "#ccc" },
-  progressFill: { height: "10px", background: "green" },
-  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
-  task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
-  ring: (p) => ({ width: "80px", height: "80px", borderRadius: "50%", background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`, display: "flex", alignItems: "center", justifyContent: "center" }),
-  innerRing: { width: "50px", height: "50px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
-  center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
-  card: { background: "#fff", padding: "20px", borderRadius: "10px" }
+  page: { padding: "20px" },
+  container: { maxWidth:"800px", margin:"auto" },
+  progressBar: { height:"10px", background:"#ccc" },
+  progressFill: { height:"10px", background:"green" },
+  top: { display:"flex", gap:"10px" },
+  task: { background:"#fff", margin:"10px 0", padding:"10px" },
+  ring: (p)=>({
+    width:"60px",
+    height:"60px",
+    borderRadius:"50%",
+    background:`conic-gradient(green ${p*3.6}deg,#ccc 0)`
+  }),
+  innerRing:{ textAlign:"center" },
+  center:{ display:"flex", justifyContent:"center", alignItems:"center", height:"100vh" },
+  card:{ background:"#fff", padding:"20px" }
 };
 
 export default App;
