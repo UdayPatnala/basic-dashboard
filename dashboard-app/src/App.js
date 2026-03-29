@@ -20,10 +20,18 @@ function App() {
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
 
-  const [editId, setEditId] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
-
   const defaultCategories = ["Java", "DSA", "Web", "Project", "Tools"];
+
+  const backgrounds = [
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+    "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
+  ];
+
+  const [bg] = useState(
+    backgrounds[Math.floor(Math.random() * backgrounds.length)]
+  );
 
   // LOAD
   useEffect(() => {
@@ -65,7 +73,7 @@ function App() {
   // LOGIN
   if (!access) {
     return (
-      <div style={styles.center}>
+      <div style={styles.center(bg)}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
           <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
@@ -92,13 +100,9 @@ function App() {
     );
   }
 
-  // 🔥 CATEGORY LIST
+  // CATEGORY DATA
   const uniqueCategories = [...new Set(tasks.map(t => t.category))];
-
-  const predefined = defaultCategories;
-  const customCategories = uniqueCategories.filter(c => !predefined.includes(c));
-
-  const finalCategories = isGuest ? uniqueCategories : defaultCategories;
+  const customCategories = uniqueCategories.filter(c => !defaultCategories.includes(c));
 
   // ADD
   const addTask = () => {
@@ -116,21 +120,30 @@ function App() {
     setTask(""); setCategory(""); setNotes("");
   };
 
-  // FILTER
+  // 🔥 FIXED SEARCH LOGIC
   const filteredTasks = tasks.filter(t => {
-    const searchMatch =
-      t.text.toLowerCase().includes(search.toLowerCase());
+    const searchText = search.toLowerCase();
 
-    const categoryMatch =
-      categoryFilter === "All" ||
-      (categoryFilter === "Other"
-        ? customCategories.includes(t.category)
-        : t.category === categoryFilter);
+    const matchesSearch =
+      t.text.toLowerCase().includes(searchText) ||
+      t.category.toLowerCase().includes(searchText);
 
-    if (search.trim() !== "") return searchMatch && categoryMatch;
+    // 👉 SEARCH = GLOBAL (ignore date)
+    if (search.trim() !== "") {
+      if (isGuest) return matchesSearch;
 
-    if (t.date === selectedDate && categoryMatch) return true;
-    if (t.date < selectedDate && !t.completed && categoryMatch) return true;
+      const categoryMatch =
+        categoryFilter === "All" ||
+        (categoryFilter === "Other"
+          ? customCategories.includes(t.category)
+          : t.category === categoryFilter);
+
+      return matchesSearch && categoryMatch;
+    }
+
+    // 👉 NORMAL MODE (date filter)
+    if (t.date === selectedDate) return true;
+    if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
@@ -147,7 +160,7 @@ function App() {
     : 0;
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page(bg)}>
       <div style={styles.container}>
 
         {isGuest && <div style={{color:"red"}}>Guest Mode</div>}
@@ -165,11 +178,14 @@ function App() {
         <div style={styles.top}>
           <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
 
-          <select onChange={(e)=>setCategoryFilter(e.target.value)}>
-            <option>All</option>
-            {predefined.map(c => <option key={c}>{c}</option>)}
-            <option>Other</option>
-          </select>
+          {/* ❌ REMOVE FILTER IN GUEST */}
+          {!isGuest && (
+            <select onChange={(e)=>setCategoryFilter(e.target.value)}>
+              <option>All</option>
+              {defaultCategories.map(c => <option key={c}>{c}</option>)}
+              <option>Other</option>
+            </select>
+          )}
 
           <input type="date" value={selectedDate} onChange={(e)=>setSelectedDate(e.target.value)} />
 
@@ -181,13 +197,8 @@ function App() {
         {/* INPUT */}
         <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
 
-        {/* CATEGORY INPUT */}
         {isGuest ? (
-          <input
-            placeholder="Enter category"
-            value={category}
-            onChange={(e)=>setCategory(e.target.value)}
-          />
+          <input placeholder="Category" value={category} onChange={(e)=>setCategory(e.target.value)} />
         ) : (
           <select value={category} onChange={(e)=>setCategory(e.target.value)}>
             <option value="">Select</option>
@@ -213,21 +224,54 @@ function App() {
 }
 
 const styles = {
-  page: { padding: "20px" },
-  container: { maxWidth:"800px", margin:"auto" },
+  page: (bg) => ({
+    minHeight: "100vh",
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
+    padding: "20px"
+  }),
+
+  container: {
+    background: "rgba(255,255,255,0.3)",
+    backdropFilter: "blur(10px)",
+    padding: "20px",
+    borderRadius: "12px",
+    maxWidth: "800px",
+    margin: "auto"
+  },
+
   progressBar: { height:"10px", background:"#ccc" },
   progressFill: { height:"10px", background:"green" },
-  top: { display:"flex", gap:"10px" },
-  task: { background:"#fff", margin:"10px 0", padding:"10px" },
+
+  top: { display:"flex", gap:"10px", flexWrap:"wrap" },
+
+  task: { background:"#fff", padding:"10px", margin:"10px 0", borderRadius:"10px" },
+
   ring: (p)=>({
-    width:"60px",
-    height:"60px",
+    width:"70px",
+    height:"70px",
     borderRadius:"50%",
-    background:`conic-gradient(green ${p*3.6}deg,#ccc 0)`
+    background:`conic-gradient(green ${p*3.6}deg,#ccc 0)`,
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center"
   }),
-  innerRing:{ textAlign:"center" },
-  center:{ display:"flex", justifyContent:"center", alignItems:"center", height:"100vh" },
-  card:{ background:"#fff", padding:"20px" }
+
+  innerRing:{ background:"#fff", padding:"10px", borderRadius:"50%" },
+
+  center:(bg)=>({
+    minHeight:"100vh",
+    display:"flex",
+    justifyContent:"center",
+    alignItems:"center",
+    backgroundImage:`url(${bg})`,
+    backgroundSize:"cover"
+  }),
+
+  card:{ background:"#fff", padding:"20px", borderRadius:"10px" }
 };
 
 export default App;
