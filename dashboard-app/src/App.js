@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import tasksData from "./data/tasks.json";
 
 function App() {
-  const ACCESS_CODES = ["9703660750", "8639481969"]; // ✅ FIXED
+  const ACCESS_CODES = ["9703660750", "8639481969"];
 
   const [enteredCode, setEnteredCode] = useState("");
   const [access, setAccess] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
 
   const [tasks, setTasks] = useState([]);
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState(""); // actual search trigger
 
   const [selectedDate, setSelectedDate] = useState(
     new Date().toLocaleDateString("en-CA")
@@ -22,6 +22,10 @@ function App() {
   const [notes, setNotes] = useState("");
 
   const defaultCategories = ["Java", "DSA", "Web", "Project", "Tools"];
+
+  // 🔥 FIXED BACKGROUND
+  const background =
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e";
 
   // LOAD
   useEffect(() => {
@@ -62,11 +66,14 @@ function App() {
   // LOGIN
   if (!access) {
     return (
-      <div style={styles.center}>
+      <div style={styles.center(background)}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
 
-          <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
+          <input
+            value={enteredCode}
+            onChange={(e) => setEnteredCode(e.target.value)}
+          />
 
           <button onClick={()=>{
             if (ACCESS_CODES.includes(enteredCode)) {
@@ -88,23 +95,24 @@ function App() {
     );
   }
 
-  const uniqueCategories = [...new Set(tasks.map(t => t.category))];
-
   const finalCategory =
     category === "Other" ? customCategory : category;
 
-  // ADD TASK
+  // ADD
   const addTask = () => {
     if (!task || !finalCategory) return;
 
-    setTasks([...tasks, {
-      id: Date.now(),
-      text: task,
-      category: finalCategory,
-      date: selectedDate,
-      notes,
-      completed: false
-    }]);
+    setTasks([
+      ...tasks,
+      {
+        id: Date.now(),
+        text: task,
+        category: finalCategory,
+        date: selectedDate,
+        notes,
+        completed: false
+      }
+    ]);
 
     setTask("");
     setCategory("");
@@ -112,47 +120,42 @@ function App() {
     setNotes("");
   };
 
-  // 🔥 FIXED FILTER (IMPORTANT)
-  const filteredTasks = tasks.filter(t => {
-    const searchText = search.toLowerCase();
+  // 🔍 SEARCH BUTTON ACTION
+  const handleSearch = () => {
+    setSearch(searchInput.toLowerCase());
+  };
 
-    const matchesSearch =
-      t.text.toLowerCase().includes(searchText) ||
-      t.category.toLowerCase().includes(searchText);
-
-    const matchesCategory =
-      categoryFilter === "All" ||
-      t.category === categoryFilter;
-
-    if (search.trim() !== "") {
-      return matchesSearch && matchesCategory;
+  // 🔥 FINAL FILTER LOGIC
+  const filteredTasks = tasks.filter((t) => {
+    if (search) {
+      return (
+        t.text.toLowerCase().includes(search) ||
+        t.category.toLowerCase().includes(search)
+      );
     }
 
-    if (t.date === selectedDate && matchesCategory) return true;
-    if (t.date < selectedDate && !t.completed && matchesCategory) return true;
+    if (t.date === selectedDate) return true;
+    if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page(background)}>
       <div style={styles.container}>
 
-        <div>Results: {filteredTasks.length}</div>
+        {/* RESULT COUNT */}
+        {search && <div>Results: {filteredTasks.length}</div>}
 
         {/* TOP */}
         <div style={styles.row}>
           <input
-            placeholder="Search..."
-            onChange={(e)=>setSearch(e.target.value)}
+            placeholder="Search task or category..."
+            value={searchInput}
+            onChange={(e)=>setSearchInput(e.target.value)}
           />
 
-          {!isGuest && (
-            <select onChange={(e)=>setCategoryFilter(e.target.value)}>
-              <option>All</option>
-              {uniqueCategories.map(c => <option key={c}>{c}</option>)}
-            </select>
-          )}
+          <button onClick={handleSearch}>Search</button>
 
           <input
             type="date"
@@ -200,7 +203,7 @@ function App() {
         </div>
 
         {/* TASKS */}
-        {filteredTasks.map(t => (
+        {filteredTasks.map((t) => (
           <div key={t.id} style={styles.task}>
             {t.text}
             <div>{t.category} | {t.date}</div>
@@ -212,12 +215,51 @@ function App() {
 }
 
 const styles = {
-  page: { padding: "20px" },
-  container: { maxWidth: "900px", margin: "auto" },
-  row: { display: "flex", gap: "10px", marginBottom: "10px" },
-  task: { background: "#fff", padding: "10px", margin: "10px 0" },
-  center: { height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" },
-  card: { background: "#fff", padding: "20px" }
+  page: (bg) => ({
+    minHeight: "100vh",
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    padding: "20px"
+  }),
+
+  container: {
+    maxWidth: "900px",
+    margin: "auto",
+    background: "rgba(255,255,255,0.3)",
+    backdropFilter: "blur(10px)",
+    padding: "20px",
+    borderRadius: "10px"
+  },
+
+  row: {
+    display: "flex",
+    gap: "10px",
+    marginBottom: "10px"
+  },
+
+  task: {
+    background: "#fff",
+    padding: "10px",
+    margin: "10px 0",
+    borderRadius: "8px"
+  },
+
+  center: (bg) => ({
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover"
+  }),
+
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "10px"
+  }
 };
 
 export default App;
