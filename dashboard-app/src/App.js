@@ -17,6 +17,7 @@ function App() {
 
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Java");
+  const [customCategory, setCustomCategory] = useState("");
   const [notes, setNotes] = useState("");
 
   const [editId, setEditId] = useState(null);
@@ -32,22 +33,34 @@ function App() {
     backgrounds[Math.floor(Math.random() * backgrounds.length)]
   );
 
-  // Notifications
+  // 🔔 Notifications
   useEffect(() => {
     if ("Notification" in window) Notification.requestPermission();
   }, []);
+
+  // 🔥 FIX JSON DATE FORMAT
+  const convertDate = (d) => {
+    if (!d) return "";
+    if (d.includes("-")) {
+      const parts = d.split("-");
+      if (parts[0].length === 4) return d; // already yyyy-mm-dd
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return d;
+  };
 
   // Load + Save
   useEffect(() => {
     const saved = localStorage.getItem("tasks");
 
-    if (saved) setTasks(JSON.parse(saved));
-    else {
+    if (saved) {
+      setTasks(JSON.parse(saved));
+    } else {
       const formatted = tasksData.map((t, i) => ({
         id: Date.now() + i,
         text: t.Task,
         category: t.Category,
-        date: t.Date,
+        date: convertDate(t.Date), // 🔥 FIX
         notes: "",
         completed: false
       }));
@@ -80,20 +93,22 @@ function App() {
     );
   }
 
+  const finalCategory = category === "Other" ? customCategory : category;
+
   const addTask = () => {
     if (!task) return;
 
     setTasks([...tasks, {
       id: Date.now(),
       text: task,
-      category,
+      category: finalCategory,
       date: selectedDate,
       notes,
       completed: false
     }]);
 
     notify("Task Added");
-    setTask(""); setNotes("");
+    setTask(""); setNotes(""); setCustomCategory("");
   };
 
   const toggleComplete = (id) => {
@@ -113,32 +128,30 @@ function App() {
   const updateTask = () => {
     setTasks(tasks.map(t =>
       t.id === editId
-        ? { ...t, text: task, category, notes, date: selectedDate }
+        ? { ...t, text: task, category: finalCategory, notes, date: selectedDate }
         : t
     ));
 
     setEditId(null);
-    setTask(""); setNotes("");
+    setTask(""); setNotes(""); setCustomCategory("");
   };
 
-  // Filter logic
+  // Filter
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (search.trim() !== "") return match;
-
     if (t.date === selectedDate) return true;
     if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
 
-  // 📊 Global Progress
+  // Progress
   const total = tasks.length;
   const completed = tasks.filter(t => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
-  // 🔵 Daily Progress
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayCompleted = dayTasks.filter(t => t.completed).length;
   const dayPercent = dayTasks.length
@@ -150,24 +163,16 @@ function App() {
       <div style={styles.container}>
 
         {/* Global Progress */}
-        <div>
-          <div>{completed}/{total} Completed</div>
-          <div style={styles.progressBar}>
-            <div style={{ ...styles.progressFill, width: `${percent}%` }} />
-          </div>
+        <div>{completed}/{total}</div>
+        <div style={styles.progressBar}>
+          <div style={{ ...styles.progressFill, width: `${percent}%` }} />
         </div>
 
-        {/* Top Section */}
+        {/* Top */}
         <div style={styles.top}>
           <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+          <input type="date" value={selectedDate} onChange={(e)=>setSelectedDate(e.target.value)} />
 
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e)=>setSelectedDate(e.target.value)}
-          />
-
-          {/* Daily Ring */}
           <div style={styles.ring(dayPercent)}>
             <div style={styles.innerRing}>{dayPercent}%</div>
           </div>
@@ -175,7 +180,25 @@ function App() {
 
         {/* Inputs */}
         <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
-        <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" />
+
+        {/* 🔥 CATEGORY DROPDOWN */}
+        <select value={category} onChange={(e)=>setCategory(e.target.value)}>
+          <option>Java</option>
+          <option>DSA</option>
+          <option>Web</option>
+          <option>Project</option>
+          <option>Tools</option>
+          <option>Other</option>
+        </select>
+
+        {category === "Other" && (
+          <input
+            placeholder="Enter category"
+            value={customCategory}
+            onChange={(e)=>setCustomCategory(e.target.value)}
+          />
+        )}
+
         <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
         <button onClick={editId ? updateTask : addTask}>
@@ -203,36 +226,13 @@ function App() {
 
 const styles = {
   page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
-
   container: { background: "rgba(255,255,255,0.3)", backdropFilter: "blur(10px)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
-
-  progressBar: { height: "10px", background: "#ccc", borderRadius: "5px" },
-  progressFill: { height: "10px", background: "green", borderRadius: "5px" },
-
-  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
-
+  progressBar: { height: "10px", background: "#ccc" },
+  progressFill: { height: "10px", background: "green" },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
-
-  ring: (percent) => ({
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    background: `conic-gradient(green ${percent * 3.6}deg, #ccc 0deg)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }),
-
-  innerRing: {
-    width: "50px",
-    height: "50px",
-    background: "#fff",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-
+  ring: (p) => ({ width: "80px", height: "80px", borderRadius: "50%", background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`, display: "flex", alignItems: "center", justifyContent: "center" }),
+  innerRing: { width: "50px", height: "50px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
   center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
   card: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "10px" }
 };
