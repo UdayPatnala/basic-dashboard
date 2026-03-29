@@ -73,7 +73,7 @@ function App() {
     );
   }
 
-  // Add Task (AUTO DATE)
+  // Add Task
   const addTask = () => {
     if (!task) return;
 
@@ -114,12 +114,16 @@ function App() {
     ));
   };
 
-  // Filter logic
+  // 🔥 UPDATED SEARCH LOGIC
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
-    if (t.date === selectedDate) return match;
-    if (t.date < selectedDate && !t.completed) return match;
+    // If searching → ignore date filter
+    if (search.trim() !== "") return match;
+
+    // Default behavior
+    if (t.date === selectedDate) return true;
+    if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
