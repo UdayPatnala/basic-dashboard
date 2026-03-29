@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import tasksData from "./data/tasks.json";
 
 function App() {
-  const ACCESS_CODE = "5258745636951";
+  const ACCESS_CODES = ["5258745636951", "9703660750", "8639481969"];
 
   const [enteredCode, setEnteredCode] = useState("");
   const [access, setAccess] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
@@ -32,13 +33,17 @@ function App() {
     backgrounds[Math.floor(Math.random() * backgrounds.length)]
   );
 
-  // 🔥 LOAD DATA (SAFE)
+  // LOAD DATA
   useEffect(() => {
+    if (isGuest) {
+      setTasks([]); // guest starts empty
+      return;
+    }
+
     const saved = localStorage.getItem("tasks");
 
     if (saved) {
       const parsed = JSON.parse(saved);
-
       if (parsed && parsed.length > 0) {
         setTasks(parsed);
       } else {
@@ -47,14 +52,14 @@ function App() {
     } else {
       loadJSON();
     }
-  }, []);
+  }, [isGuest]);
 
   const loadJSON = () => {
     const formatted = tasksData.map((t, i) => ({
       id: Date.now() + i,
       text: t.Task,
       category: t.Category,
-      date: t.Date, // already correct format
+      date: t.Date,
       notes: "",
       completed: false
     }));
@@ -62,28 +67,47 @@ function App() {
     setTasks(formatted);
   };
 
-  // SAVE
+  // SAVE (only for admin mode)
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    if (!isGuest) {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+  }, [tasks, isGuest]);
 
-  // ACCESS SCREEN
+  // LOGIN SCREEN
   if (!access) {
     return (
       <div style={styles.center(bg)}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
+
           <input
             value={enteredCode}
             onChange={(e) => setEnteredCode(e.target.value)}
           />
+
           <button
             onClick={() => {
-              if (enteredCode === ACCESS_CODE) setAccess(true);
-              else alert("Wrong Code");
+              if (ACCESS_CODES.includes(enteredCode)) {
+                setAccess(true);
+                setIsGuest(false);
+              } else {
+                alert("Invalid Code");
+              }
             }}
           >
             Enter
+          </button>
+
+          <hr />
+
+          <button
+            onClick={() => {
+              setAccess(true);
+              setIsGuest(true);
+            }}
+          >
+            Continue as Guest
           </button>
         </div>
       </div>
@@ -92,7 +116,7 @@ function App() {
 
   const finalCategory = category === "Other" ? customCategory : category;
 
-  // ADD TASK
+  // ADD
   const addTask = () => {
     if (!task) return;
 
@@ -150,9 +174,13 @@ function App() {
     );
   };
 
-  // FILTER
+  // SEARCH
   const filteredTasks = tasks.filter((t) => {
-    const match = t.text.toLowerCase().includes(search.toLowerCase());
+    const searchText = search.toLowerCase();
+
+    const match =
+      t.text.toLowerCase().includes(searchText) ||
+      t.category.toLowerCase().includes(searchText);
 
     if (search.trim() !== "") return match;
 
@@ -162,12 +190,11 @@ function App() {
     return false;
   });
 
-  // GLOBAL PROGRESS
+  // PROGRESS
   const total = tasks.length;
   const completed = tasks.filter((t) => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
-  // DAILY PROGRESS
   const dayTasks = tasks.filter((t) => t.date === selectedDate);
   const dayCompleted = dayTasks.filter((t) => t.completed).length;
   const dayPercent = dayTasks.length
@@ -177,46 +204,28 @@ function App() {
   return (
     <div style={styles.page(bg)}>
       <div style={styles.container}>
-        {/* GLOBAL PROGRESS */}
-        <div>
-          {completed}/{total} Completed
-        </div>
+        {isGuest && <div style={{ color: "red" }}>Guest Mode</div>}
 
+        {/* PROGRESS */}
+        <div>{completed}/{total} Completed</div>
         <div style={styles.progressBar}>
-          <div
-            style={{ ...styles.progressFill, width: `${percent}%` }}
-          />
+          <div style={{ ...styles.progressFill, width: `${percent}%` }} />
         </div>
 
         {/* TOP */}
         <div style={styles.top}>
-          <input
-            placeholder="Search..."
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
+          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+          <input type="date" value={selectedDate} onChange={(e)=>setSelectedDate(e.target.value)} />
 
           <div style={styles.ring(dayPercent)}>
             <div style={styles.innerRing}>{dayPercent}%</div>
           </div>
         </div>
 
-        {/* INPUTS */}
-        <input
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
-          placeholder="Task"
-        />
+        {/* INPUT */}
+        <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
+        <select value={category} onChange={(e)=>setCategory(e.target.value)}>
           <option>Java</option>
           <option>DSA</option>
           <option>Web</option>
@@ -229,15 +238,11 @@ function App() {
           <input
             placeholder="Custom category"
             value={customCategory}
-            onChange={(e) => setCustomCategory(e.target.value)}
+            onChange={(e)=>setCustomCategory(e.target.value)}
           />
         )}
 
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notes"
-        />
+        <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
         <button onClick={editId ? updateTask : addTask}>
           {editId ? "Update" : "Add"}
@@ -245,40 +250,16 @@ function App() {
 
         {/* TASK LIST */}
         {filteredTasks.map((t) => (
-          <div
-            key={t.id}
-            style={styles.task}
-            onClick={() =>
-              setExpandedId(expandedId === t.id ? null : t.id)
-            }
+          <div key={t.id} style={styles.task}
+            onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
           >
-            <div>
-              {t.completed ? "✔️" : "⭕"} {t.text}
-            </div>
-
-            <div>
-              {t.category} | {t.date}
-            </div>
+            <div>{t.completed ? "✔️" : "⭕"} {t.text}</div>
+            <div>{t.category} | {t.date}</div>
 
             {expandedId === t.id && <div>{t.notes}</div>}
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startEdit(t);
-              }}
-            >
-              ✏️
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleComplete(t.id);
-              }}
-            >
-              ✔️
-            </button>
+            <button onClick={(e)=>{e.stopPropagation(); startEdit(t)}}>✏️</button>
+            <button onClick={(e)=>{e.stopPropagation(); toggleComplete(t.id)}}>✔️</button>
           </div>
         ))}
       </div>
@@ -287,79 +268,16 @@ function App() {
 }
 
 const styles = {
-  page: (bg) => ({
-    minHeight: "100vh",
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover",
-    padding: "20px"
-  }),
-
-  container: {
-    background: "rgba(255,255,255,0.3)",
-    padding: "20px",
-    borderRadius: "12px",
-    maxWidth: "800px",
-    margin: "auto"
-  },
-
-  progressBar: {
-    height: "10px",
-    background: "#ccc"
-  },
-
-  progressFill: {
-    height: "10px",
-    background: "green"
-  },
-
-  top: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "10px"
-  },
-
-  task: {
-    background: "#fff",
-    padding: "10px",
-    margin: "10px 0",
-    borderRadius: "10px"
-  },
-
-  ring: (p) => ({
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }),
-
-  innerRing: {
-    width: "50px",
-    height: "50px",
-    background: "#fff",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-
-  center: (bg) => ({
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover"
-  }),
-
-  card: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "10px"
-  }
+  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
+  container: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
+  progressBar: { height: "10px", background: "#ccc" },
+  progressFill: { height: "10px", background: "green" },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
+  task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
+  ring: (p) => ({ width: "80px", height: "80px", borderRadius: "50%", background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`, display: "flex", alignItems: "center", justifyContent: "center" }),
+  innerRing: { width: "50px", height: "50px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
+  center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
+  card: { background: "#fff", padding: "20px", borderRadius: "10px" }
 };
 
 export default App;
