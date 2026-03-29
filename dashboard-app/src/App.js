@@ -21,14 +21,6 @@ function App() {
 
   const [editId, setEditId] = useState(null);
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   const backgrounds = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
@@ -78,8 +70,8 @@ function App() {
       <div style={styles.center(bg)}>
         <div style={styles.card}>
           <h2>Enter Access Code</h2>
-          <input style={styles.input} value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
-          <button style={styles.button} onClick={()=>{
+          <input value={enteredCode} onChange={(e)=>setEnteredCode(e.target.value)} />
+          <button onClick={()=>{
             if(enteredCode === ACCESS_CODE) setAccess(true);
             else alert("Wrong Code");
           }}>Enter</button>
@@ -101,7 +93,6 @@ function App() {
     }]);
 
     notify("Task Added");
-
     setTask(""); setNotes("");
   };
 
@@ -130,39 +121,64 @@ function App() {
     setTask(""); setNotes("");
   };
 
+  // Filter logic
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (search.trim() !== "") return match;
+
     if (t.date === selectedDate) return true;
     if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
 
+  // 📊 Global Progress
   const total = tasks.length;
   const completed = tasks.filter(t => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
+  // 🔵 Daily Progress
+  const dayTasks = tasks.filter(t => t.date === selectedDate);
+  const dayCompleted = dayTasks.filter(t => t.completed).length;
+  const dayPercent = dayTasks.length
+    ? Math.round((dayCompleted / dayTasks.length) * 100)
+    : 0;
+
   return (
     <div style={styles.page(bg)}>
-      <div style={styles.container(isMobile)}>
+      <div style={styles.container}>
 
-        {/* Progress */}
-        <div>{completed}/{total} ({percent}%)</div>
+        {/* Global Progress */}
+        <div>
+          <div>{completed}/{total} Completed</div>
+          <div style={styles.progressBar}>
+            <div style={{ ...styles.progressFill, width: `${percent}%` }} />
+          </div>
+        </div>
 
-        {/* Top */}
-        <div style={isMobile ? styles.mobileTop : styles.desktopTop}>
-          <input style={styles.input} placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
-          <input style={styles.input} type="date" value={selectedDate} onChange={(e)=>setSelectedDate(e.target.value)} />
+        {/* Top Section */}
+        <div style={styles.top}>
+          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e)=>setSelectedDate(e.target.value)}
+          />
+
+          {/* Daily Ring */}
+          <div style={styles.ring(dayPercent)}>
+            <div style={styles.innerRing}>{dayPercent}%</div>
+          </div>
         </div>
 
         {/* Inputs */}
-        <input style={styles.input} value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
-        <input style={styles.input} value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" />
-        <textarea style={styles.input} value={notes} onChange={(e)=>setNotes(e.target.value)} />
+        <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
+        <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" />
+        <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
-        <button style={styles.button} onClick={editId ? updateTask : addTask}>
+        <button onClick={editId ? updateTask : addTask}>
           {editId ? "Update" : "Add"}
         </button>
 
@@ -186,25 +202,36 @@ function App() {
 }
 
 const styles = {
-  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "10px" }),
+  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
 
-  container: (isMobile) => ({
-    background: "rgba(255,255,255,0.3)",
-    backdropFilter: "blur(10px)",
-    padding: "15px",
-    borderRadius: "12px",
-    maxWidth: isMobile ? "100%" : "700px",
-    margin: "auto"
-  }),
+  container: { background: "rgba(255,255,255,0.3)", backdropFilter: "blur(10px)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
 
-  input: { width: "100%", padding: "10px", margin: "5px 0" },
+  progressBar: { height: "10px", background: "#ccc", borderRadius: "5px" },
+  progressFill: { height: "10px", background: "green", borderRadius: "5px" },
 
-  button: { width: "100%", padding: "10px", background: "green", color: "#fff", border: "none" },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
 
   task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
 
-  mobileTop: { display: "flex", flexDirection: "column", gap: "10px" },
-  desktopTop: { display: "flex", gap: "10px" },
+  ring: (percent) => ({
+    width: "80px",
+    height: "80px",
+    borderRadius: "50%",
+    background: `conic-gradient(green ${percent * 3.6}deg, #ccc 0deg)`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }),
+
+  innerRing: {
+    width: "50px",
+    height: "50px",
+    background: "#fff",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
 
   center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
   card: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "10px" }
