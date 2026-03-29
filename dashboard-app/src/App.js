@@ -10,7 +10,7 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toLocaleDateString("en-CA") // ✅ FIX
   );
 
   const [expandedId, setExpandedId] = useState(null);
@@ -22,9 +22,18 @@ function App() {
 
   const [editId, setEditId] = useState(null);
 
-  // ✅ SAFE DATE FORMAT (FINAL FIX)
-  const formatDate = (d) => {
-    return new Date(d).toISOString().split("T")[0];
+  // ✅ DATE FORMAT WITHOUT TIMEZONE ISSUE
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+
+    if (dateStr.includes("-")) return dateStr; // already correct
+
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   };
 
   const backgrounds = [
@@ -38,12 +47,11 @@ function App() {
     backgrounds[Math.floor(Math.random() * backgrounds.length)]
   );
 
-  // 🔔 Notifications
   useEffect(() => {
     if ("Notification" in window) Notification.requestPermission();
   }, []);
 
-  // ✅ LOAD DATA
+  // LOAD
   useEffect(() => {
     const saved = localStorage.getItem("tasks");
 
@@ -52,12 +60,13 @@ function App() {
     } else {
       const formatted = tasksData.map((t, i) => ({
         id: Date.now() + i,
-        text: t.Task || "",
-        category: t.Category || "General",
-        date: formatDate(t.Date),
+        text: t.Task,
+        category: t.Category,
+        date: t.Date, // ✅ NO CONVERSION
         notes: "",
         completed: false
       }));
+
       setTasks(formatted);
     }
   }, []);
@@ -73,7 +82,6 @@ function App() {
     }
   };
 
-  // 🔐 ACCESS
   if (!access) {
     return (
       <div style={styles.center(bg)}>
@@ -91,7 +99,6 @@ function App() {
 
   const finalCategory = category === "Other" ? customCategory : category;
 
-  // ADD
   const addTask = () => {
     if (!task) return;
 
@@ -99,7 +106,7 @@ function App() {
       id: Date.now(),
       text: task,
       category: finalCategory,
-      date: selectedDate,
+      date: selectedDate, // ✅ SAME FORMAT
       notes,
       completed: false
     }]);
@@ -108,7 +115,6 @@ function App() {
     setTask(""); setNotes(""); setCustomCategory("");
   };
 
-  // EDIT
   const startEdit = (t) => {
     setTask(t.text);
     setCategory(t.category);
@@ -127,7 +133,6 @@ function App() {
     setTask(""); setNotes("");
   };
 
-  // COMPLETE
   const toggleComplete = (id) => {
     setTasks(tasks.map(t =>
       t.id === id ? { ...t, completed: !t.completed } : t
@@ -135,31 +140,24 @@ function App() {
     notify("Task Updated");
   };
 
-  // ✅ FILTER (FIXED)
+  // ✅ FINAL FILTER (NO DATE BUG)
   const filteredTasks = tasks.filter(t => {
-    const taskDate = formatDate(t.date);
-    const selected = formatDate(selectedDate);
-
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (search.trim() !== "") return match;
 
-    if (taskDate === selected) return true;
-    if (taskDate < selected && !t.completed) return true;
+    if (t.date === selectedDate) return true;
+    if (t.date < selectedDate && !t.completed) return true;
 
     return false;
   });
 
-  // 📊 GLOBAL PROGRESS
+  // PROGRESS
   const total = tasks.length;
   const completed = tasks.filter(t => t.completed).length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
-  // 🔵 DAILY PROGRESS
-  const dayTasks = tasks.filter(
-    t => formatDate(t.date) === formatDate(selectedDate)
-  );
-
+  const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayCompleted = dayTasks.filter(t => t.completed).length;
   const dayPercent = dayTasks.length
     ? Math.round((dayCompleted / dayTasks.length) * 100)
@@ -222,7 +220,7 @@ function App() {
             onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
           >
             <div>{t.completed ? "✔️" : "⭕"} {t.text}</div>
-            <div>{t.category} | {formatDate(t.date)}</div>
+            <div>{t.category} | {t.date}</div>
 
             {expandedId === t.id && <div>{t.notes}</div>}
 
@@ -236,73 +234,16 @@ function App() {
 }
 
 const styles = {
-  page: (bg) => ({
-    minHeight: "100vh",
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover",
-    padding: "20px"
-  }),
-
-  container: {
-    background: "rgba(255,255,255,0.3)",
-    backdropFilter: "blur(10px)",
-    padding: "20px",
-    borderRadius: "12px",
-    maxWidth: "800px",
-    margin: "auto"
-  },
-
+  page: (bg) => ({ minHeight: "100vh", backgroundImage: `url(${bg})`, backgroundSize: "cover", padding: "20px" }),
+  container: { background: "rgba(255,255,255,0.3)", backdropFilter: "blur(10px)", padding: "20px", borderRadius: "12px", maxWidth: "800px", margin: "auto" },
   progressBar: { height: "10px", background: "#ccc" },
   progressFill: { height: "10px", background: "green" },
-
-  top: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "10px"
-  },
-
-  task: {
-    background: "#fff",
-    padding: "10px",
-    margin: "10px 0",
-    borderRadius: "10px"
-  },
-
-  ring: (p) => ({
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }),
-
-  innerRing: {
-    width: "50px",
-    height: "50px",
-    background: "#fff",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-
-  center: (bg) => ({
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover"
-  }),
-
-  card: {
-    background: "rgba(255,255,255,0.3)",
-    padding: "20px",
-    borderRadius: "10px"
-  }
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
+  task: { background: "#fff", padding: "10px", margin: "10px 0", borderRadius: "10px" },
+  ring: (p) => ({ width: "80px", height: "80px", borderRadius: "50%", background: `conic-gradient(green ${p * 3.6}deg, #ccc 0deg)`, display: "flex", alignItems: "center", justifyContent: "center" }),
+  innerRing: { width: "50px", height: "50px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
+  center: (bg) => ({ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundImage: `url(${bg})`, backgroundSize: "cover" }),
+  card: { background: "rgba(255,255,255,0.3)", padding: "20px", borderRadius: "10px" }
 };
 
 export default App;
