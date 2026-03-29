@@ -17,7 +17,6 @@ function App() {
 
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("Java");
-  const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
 
   const [editId, setEditId] = useState(null);
@@ -74,7 +73,7 @@ function App() {
     );
   }
 
-  // Add Task
+  // Add Task (AUTO DATE)
   const addTask = () => {
     if (!task) return;
 
@@ -82,30 +81,31 @@ function App() {
       id: Date.now(),
       text: task,
       category,
-      date,
+      date: selectedDate,
       notes,
       completed: false
     }]);
 
-    setTask(""); setDate(""); setNotes("");
+    setTask(""); setNotes("");
   };
 
   // Edit
   const startEdit = (t) => {
     setTask(t.text);
     setCategory(t.category);
-    setDate(t.date);
     setNotes(t.notes);
     setEditId(t.id);
   };
 
   const updateTask = () => {
     setTasks(tasks.map(t =>
-      t.id === editId ? { ...t, text: task, category, date, notes } : t
+      t.id === editId
+        ? { ...t, text: task, category, notes, date: selectedDate }
+        : t
     ));
 
     setEditId(null);
-    setTask(""); setDate(""); setNotes("");
+    setTask(""); setNotes("");
   };
 
   const toggleComplete = (id) => {
@@ -114,12 +114,11 @@ function App() {
     ));
   };
 
-  // 🔥 FINAL FILTER LOGIC
+  // Filter logic
   const filteredTasks = tasks.filter(t => {
     const match = t.text.toLowerCase().includes(search.toLowerCase());
 
     if (t.date === selectedDate) return match;
-
     if (t.date < selectedDate && !t.completed) return match;
 
     return false;
@@ -141,7 +140,10 @@ function App() {
 
         {/* Top Bar */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <input placeholder="Search..." onChange={(e)=>setSearch(e.target.value)} />
+          <input
+            placeholder="Search..."
+            onChange={(e)=>setSearch(e.target.value)}
+          />
 
           <input
             type="date"
@@ -153,7 +155,6 @@ function App() {
         {/* Add/Edit */}
         <input value={task} onChange={(e)=>setTask(e.target.value)} placeholder="Task" />
         <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" />
-        <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} />
         <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} />
 
         {editId ? (
@@ -170,11 +171,8 @@ function App() {
               margin: "10px 0",
               padding: "10px",
               borderRadius: "10px",
-              cursor: "pointer",
-              transition: "0.3s"
+              cursor: "pointer"
             }}
-            onMouseEnter={(e)=>e.currentTarget.style.transform="scale(1.02)"}
-            onMouseLeave={(e)=>e.currentTarget.style.transform="scale(1)"}
             onClick={()=> setExpandedId(expandedId === t.id ? null : t.id)}
           >
             <div>
