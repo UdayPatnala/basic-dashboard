@@ -203,12 +203,23 @@ function App() {
         </div>
 
         {/* TASKS */}
-        {filteredTasks.map((t) => (
-          <div key={t.id} style={styles.task}>
-            {t.text}
-            <div>{t.category} | {t.date}</div>
+        {filteredTasks.length > 0 ? (
+          filteredTasks.map((t) => (
+            <div key={t.id} style={styles.task}>
+              {t.text}
+              <div>{t.category} | {t.date}</div>
+            </div>
+          ))
+        ) : (
+          <div style={styles.emptyState}>
+            <div style={{ fontSize: "16px", marginBottom: "8px", fontWeight: "500", color: "#333" }}>
+              {search ? "No tasks found matching your search." : "No tasks found for this date."}
+            </div>
+            <div style={{ fontSize: "14px", color: "#666" }}>
+              {!search && "Use the form above to add a new task and get started!"}
+            </div>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -243,6 +254,14 @@ const styles = {
     background: "#fff",
     padding: "10px",
     margin: "10px 0",
+    borderRadius: "8px"
+  },
+
+  emptyState: {
+    background: "#fff",
+    padding: "30px 20px",
+    margin: "10px 0",
+    textAlign: "center",
     borderRadius: "8px"
   },
 
