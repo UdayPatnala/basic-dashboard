@@ -13,13 +13,12 @@ function App() {
   const [search, setSearch] = useState(""); // actual search trigger
 
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-CA")
+    new Date().toLocaleDateString("en-CA"),
   );
 
   const [task, setTask] = useState("");
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
-  const [notes, setNotes] = useState("");
 
   const defaultCategories = ["Java", "DSA", "Web", "Project", "Tools"];
 
@@ -51,8 +50,7 @@ function App() {
       text: t.Task,
       category: t.Category,
       date: t.Date,
-      notes: "",
-      completed: false
+      completed: false,
     }));
     setTasks(formatted);
   };
@@ -75,19 +73,23 @@ function App() {
             onChange={(e) => setEnteredCode(e.target.value)}
           />
 
-          <button onClick={()=>{
-            if (ACCESS_CODES.includes(enteredCode)) {
-              setAccess(true);
-              setIsGuest(false);
-            } else alert("Invalid Code");
-          }}>
+          <button
+            onClick={() => {
+              if (ACCESS_CODES.includes(enteredCode)) {
+                setAccess(true);
+                setIsGuest(false);
+              } else alert("Invalid Code");
+            }}
+          >
             Enter
           </button>
 
-          <button onClick={()=>{
-            setAccess(true);
-            setIsGuest(true);
-          }}>
+          <button
+            onClick={() => {
+              setAccess(true);
+              setIsGuest(true);
+            }}
+          >
             Guest Mode
           </button>
         </div>
@@ -95,8 +97,7 @@ function App() {
     );
   }
 
-  const finalCategory =
-    category === "Other" ? customCategory : category;
+  const finalCategory = category === "Other" ? customCategory : category;
 
   // ADD
   const addTask = () => {
@@ -109,15 +110,14 @@ function App() {
         text: task,
         category: finalCategory,
         date: selectedDate,
-        notes,
-        completed: false
-      }
+
+        completed: false,
+      },
     ]);
 
     setTask("");
     setCategory("");
     setCustomCategory("");
-    setNotes("");
   };
 
   // 🔍 SEARCH BUTTON ACTION
@@ -143,7 +143,6 @@ function App() {
   return (
     <div style={styles.page(background)}>
       <div style={styles.container}>
-
         {/* RESULT COUNT */}
         {search && <div>Results: {filteredTasks.length}</div>}
 
@@ -152,7 +151,7 @@ function App() {
           <input
             placeholder="Search task or category..."
             value={searchInput}
-            onChange={(e)=>setSearchInput(e.target.value)}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
 
           <button onClick={handleSearch}>Search</button>
@@ -160,7 +159,7 @@ function App() {
           <input
             type="date"
             value={selectedDate}
-            onChange={(e)=>setSelectedDate(e.target.value)}
+            onChange={(e) => setSelectedDate(e.target.value)}
           />
         </div>
 
@@ -168,7 +167,7 @@ function App() {
         <div style={styles.row}>
           <input
             value={task}
-            onChange={(e)=>setTask(e.target.value)}
+            onChange={(e) => setTask(e.target.value)}
             placeholder="Task"
           />
 
@@ -176,16 +175,18 @@ function App() {
             <input
               placeholder="Category"
               value={category}
-              onChange={(e)=>setCategory(e.target.value)}
+              onChange={(e) => setCategory(e.target.value)}
             />
           ) : (
             <>
               <select
                 value={category}
-                onChange={(e)=>setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value)}
               >
                 <option value="">Select</option>
-                {defaultCategories.map(c => <option key={c}>{c}</option>)}
+                {defaultCategories.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
                 <option>Other</option>
               </select>
 
@@ -193,7 +194,7 @@ function App() {
                 <input
                   placeholder="Custom category"
                   value={customCategory}
-                  onChange={(e)=>setCustomCategory(e.target.value)}
+                  onChange={(e) => setCustomCategory(e.target.value)}
                 />
               )}
             </>
@@ -206,7 +207,9 @@ function App() {
         {filteredTasks.map((t) => (
           <div key={t.id} style={styles.task}>
             {t.text}
-            <div>{t.category} | {t.date}</div>
+            <div>
+              {t.category} | {t.date}
+            </div>
           </div>
         ))}
       </div>
@@ -221,7 +224,7 @@ const styles = {
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
-    padding: "20px"
+    padding: "20px",
   }),
 
   container: {
@@ -230,20 +233,20 @@ const styles = {
     background: "rgba(255,255,255,0.3)",
     backdropFilter: "blur(10px)",
     padding: "20px",
-    borderRadius: "10px"
+    borderRadius: "10px",
   },
 
   row: {
     display: "flex",
     gap: "10px",
-    marginBottom: "10px"
+    marginBottom: "10px",
   },
 
   task: {
     background: "#fff",
     padding: "10px",
     margin: "10px 0",
-    borderRadius: "8px"
+    borderRadius: "8px",
   },
 
   center: (bg) => ({
@@ -252,14 +255,14 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     backgroundImage: `url(${bg})`,
-    backgroundSize: "cover"
+    backgroundSize: "cover",
   }),
 
   card: {
     background: "#fff",
     padding: "20px",
-    borderRadius: "10px"
-  }
+    borderRadius: "10px",
+  },
 };
 
 export default App;
