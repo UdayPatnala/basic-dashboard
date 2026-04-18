@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import tasksData from "./data/tasks.json";
 import { Search, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, LogOut, Briefcase, Code, Layout, Wrench, Folder } from "lucide-react";
 import { format } from "date-fns";
@@ -199,19 +199,21 @@ function App() {
   };
 
   // 🔥 FINAL FILTER LOGIC
-  const filteredTasks = tasks.filter((t) => {
-    if (search) {
-      return (
-        t.text.toLowerCase().includes(search) ||
-        t.category.toLowerCase().includes(search)
-      );
-    }
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (search) {
+        return (
+          t.text.toLowerCase().includes(search) ||
+          t.category.toLowerCase().includes(search)
+        );
+      }
 
-    if (t.date === selectedDate) return true;
-    if (t.date < selectedDate && !t.completed) return true;
+      if (t.date === selectedDate) return true;
+      if (t.date < selectedDate && !t.completed) return true;
 
-    return false;
-  });
+      return false;
+    });
+  }, [tasks, search, selectedDate]);
 
   const completedCount = filteredTasks.filter(t => t.completed).length;
   const progress = filteredTasks.length > 0 ? Math.round((completedCount / filteredTasks.length) * 100) : 0;
