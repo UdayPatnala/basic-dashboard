@@ -1,0 +1,3 @@
+## 2023-10-24 - React Hooks Order Constraints with Early Returns
+**Learning:** `useMemo` hooks (and other React hooks) must always be called unconditionally. Moving a filtering computation hook like `useMemo` into a component that has an early return (e.g., a login gate `if (!access) return ...`) will cause a compilation error (`React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render`). The hook must be declared *before* any early returns.
+**Action:** When adding or moving hooks to optimize performance, always check the surrounding code for early returns. Ensure all hooks are placed at the top level of the functional component before any `if (...) return ...` statements.

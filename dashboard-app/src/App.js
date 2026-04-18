@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import tasksData from "./data/tasks.json";
 
 function App() {
@@ -63,6 +63,24 @@ function App() {
     }
   }, [tasks, isGuest]);
 
+  // 🔥 FINAL FILTER LOGIC
+  const filteredTasks = useMemo(() => {
+    // ⚡ Bolt: Memoized the task filtering logic to prevent unnecessary re-computations on unrelated state updates (e.g., when typing in inputs).
+    return tasks.filter((t) => {
+      if (search) {
+        return (
+          t.text.toLowerCase().includes(search) ||
+          t.category.toLowerCase().includes(search)
+        );
+      }
+
+      if (t.date === selectedDate) return true;
+      if (t.date < selectedDate && !t.completed) return true;
+
+      return false;
+    });
+  }, [tasks, search, selectedDate]);
+
   // LOGIN
   if (!access) {
     return (
@@ -125,20 +143,6 @@ function App() {
     setSearch(searchInput.toLowerCase());
   };
 
-  // 🔥 FINAL FILTER LOGIC
-  const filteredTasks = tasks.filter((t) => {
-    if (search) {
-      return (
-        t.text.toLowerCase().includes(search) ||
-        t.category.toLowerCase().includes(search)
-      );
-    }
-
-    if (t.date === selectedDate) return true;
-    if (t.date < selectedDate && !t.completed) return true;
-
-    return false;
-  });
 
   return (
     <div style={styles.page(background)}>
