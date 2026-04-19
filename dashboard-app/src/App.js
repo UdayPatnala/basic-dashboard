@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
 import tasksData from "./data/tasks.json";
 import { Search, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, LogOut, Briefcase, Code, Layout, Wrench, Folder } from "lucide-react";
+
+// ── TaskMaster Pro Logo ──────────────────────────────────────────────────────
+const TaskMasterLogo = ({ size = 32 }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Background rounded square */}
+    <rect width="40" height="40" rx="10" fill="#4f46e5" />
+    {/* Checklist lines */}
+    <rect x="18" y="11" width="13" height="2.5" rx="1.25" fill="white" opacity="0.9" />
+    <rect x="18" y="18.75" width="10" height="2.5" rx="1.25" fill="white" opacity="0.9" />
+    <rect x="18" y="26.5" width="11" height="2.5" rx="1.25" fill="white" opacity="0.9" />
+    {/* Check marks */}
+    <polyline points="9,13 11.5,15.5 16,10.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <polyline points="9,20.75 11.5,23.25 16,18.25" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+    <polyline points="9,28.5 11.5,31 16,26" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+  </svg>
+);
 import { format } from "date-fns";
 
 // UI Components
@@ -91,6 +107,9 @@ function App() {
           <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden">
             <div className="bg-indigo-600 h-2 w-full"></div>
             <CardHeader className="space-y-1 pb-8 pt-8">
+              <div className="flex justify-center mb-3">
+                <TaskMasterLogo size={56} />
+              </div>
               <CardTitle className="text-3xl font-bold text-center tracking-tight text-slate-900">TaskMaster Pro</CardTitle>
               <CardDescription className="text-center text-base">Enter your access code to continue</CardDescription>
             </CardHeader>
@@ -224,9 +243,7 @@ function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-indigo-600 p-2 rounded-lg">
-              <CheckCircle2 className="text-white h-5 w-5" />
-            </div>
+            <TaskMasterLogo size={36} />
             <h1 className="text-xl font-bold tracking-tight text-slate-900">TaskMaster Pro</h1>
           </div>
 
