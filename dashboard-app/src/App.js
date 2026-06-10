@@ -95,6 +95,23 @@ function App() {
     }
   }, [tasks, isGuest]);
 
+  // 🔥 FINAL FILTER LOGIC
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (search) {
+        return (
+          t.text.toLowerCase().includes(search) ||
+          t.category.toLowerCase().includes(search)
+        );
+      }
+
+      if (t.date === selectedDate) return true;
+      if (t.date < selectedDate && !t.completed) return true;
+
+      return false;
+    });
+  }, [tasks, search, selectedDate]);
+
   // LOGIN
   if (!access) {
     return (
@@ -217,22 +234,6 @@ function App() {
     return { name: catName, icon: Folder, color: "bg-slate-100 text-slate-700 border-slate-200" };
   };
 
-  // 🔥 FINAL FILTER LOGIC
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      if (search) {
-        return (
-          t.text.toLowerCase().includes(search) ||
-          t.category.toLowerCase().includes(search)
-        );
-      }
-
-      if (t.date === selectedDate) return true;
-      if (t.date < selectedDate && !t.completed) return true;
-
-      return false;
-    });
-  }, [tasks, search, selectedDate]);
 
   const completedCount = filteredTasks.filter(t => t.completed).length;
   const progress = filteredTasks.length > 0 ? Math.round((completedCount / filteredTasks.length) * 100) : 0;
