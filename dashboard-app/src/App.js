@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import tasksData from "./data/tasks.json";
 import { Search, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, LogOut, Briefcase, Code, Layout, Wrench, Folder } from "lucide-react";
+import { loadTasks, saveTasks, loadConfig, saveConfig } from "./utils/storage";
 
 // ── TaskMaster Pro Logo ──────────────────────────────────────────────────────
 const TaskMasterLogo = ({ size = 32 }) => (
@@ -29,10 +30,9 @@ import { Badge } from "./components/ui/badge";
 
 // Framer Motion for animations
 import { motion, AnimatePresence } from "framer-motion";
+import { validateAccessCode } from "./config/authConfig";
 
 function App() {
-  const ACCESS_CODES = ["9703660750", "8639481969"];
-
   const [enteredCode, setEnteredCode] = useState("");
   const [access, setAccess] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
@@ -67,14 +67,17 @@ function App() {
       return;
     }
 
-    const saved = localStorage.getItem("tasks");
+    const saved = loadTasks([]);
 
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.length > 0) setTasks(parsed);
-      else loadJSON();
+    if (saved && saved.length > 0) {
+      setTasks(saved);
     } else {
       loadJSON();
+    }
+
+    const savedConfig = loadConfig();
+    if (savedConfig.selectedDate) {
+      setSelectedDate(savedConfig.selectedDate);
     }
   }, [isGuest]);
 
@@ -87,13 +90,18 @@ function App() {
       completed: false,
     }));
     setTasks(formatted);
+    saveTasks(formatted);
   };
 
   useEffect(() => {
-    if (!isGuest) {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
+    if (!isGuest && tasks.length > 0) {
+      saveTasks(tasks);
     }
   }, [tasks, isGuest]);
+
+  useEffect(() => {
+    saveConfig({ selectedDate });
+  }, [selectedDate]);
 
   // LOGIN
   if (!access) {
@@ -123,7 +131,7 @@ function App() {
                   onChange={(e) => setEnteredCode(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      if (ACCESS_CODES.includes(enteredCode)) {
+                      if (validateAccessCode(enteredCode)) {
                         setAccess(true);
                         setIsGuest(false);
                       } else alert("Invalid Code");
@@ -135,7 +143,7 @@ function App() {
                 <Button
                   className="w-full h-12 text-base font-medium"
                   onClick={() => {
-                    if (ACCESS_CODES.includes(enteredCode)) {
+                    if (validateAccessCode(enteredCode)) {
                       setAccess(true);
                       setIsGuest(false);
                     } else alert("Invalid Code");
